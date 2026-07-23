@@ -85,15 +85,19 @@ Le drag and drop n'est pas faisable directement dans Discord.
 La solution retenue pour l'experience joueur est :
 
 - plusieurs menus deroulants visibles dans le parcours de prono
-- trois menus pour le top 3 des qualifications : Q1, Q2, Q3
-- dix menus pour le top 10 du Grand Prix : R1 a R10
+- un champ 1er des qualifications, a selectionner
+- un champ 2e des qualifications, a selectionner
+- un champ 3e des qualifications, a selectionner
+- un champ 1er du Grand Prix, a selectionner
+- un champ 2e du Grand Prix, a selectionner
+- et ainsi de suite jusqu'au champ 10e du Grand Prix
 - validation anti-doublon au moment de la soumission
 
 Le choix se fait donc en selectionnant les pilotes dans des listes.
 
 Une alternative avait ete discutee : parcours sequentiel position par position, avec retrait automatique des pilotes deja selectionnes. Cette approche est techniquement possible, mais moins confortable car l'utilisateur peut vouloir modifier un choix precedent apres avoir rempli une autre position.
 
-Decision retenue : faire pronostiquer pour le moment le top 3 des qualifications et le top 10 du Grand Prix, puis bloquer proprement a la validation si le meme pilote est selectionne plusieurs fois dans une meme liste.
+Decision retenue : faire pronostiquer pour le moment le top 3 des qualifications et le top 10 du Grand Prix avec des champs position par position, puis bloquer proprement a la validation si le meme pilote est selectionne plusieurs fois dans une meme liste.
 
 ### 3.5 Emojis pilotes
 
@@ -804,7 +808,7 @@ Fonctionnalites :
 - salon prive de test
 - message de Grand Prix
 - bouton "Faire mon prono"
-- menus deroulants pilotes
+- menus deroulants pilotes position par position
 - emojis pilotes dans les options
 - pronostic top 3 des qualifications
 - pronostic top 10 du Grand Prix

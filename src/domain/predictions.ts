@@ -14,6 +14,13 @@ export function validatePrediction(
     ...prediction.raceTop10DriverIds
   ];
 
+  if (selectedDriverIds.some((driverId) => !driverId)) {
+    return {
+      ok: false,
+      reason: "Remplis tous les champs avant de valider ton prono."
+    };
+  }
+
   const unknownDriver = selectedDriverIds.find((driverId) => !activeDriverIds.has(driverId));
 
   if (unknownDriver) {
