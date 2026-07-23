@@ -170,7 +170,7 @@ async function handlePredictionSubmit(interaction: ButtonInteraction) {
   if (!validation.ok) {
     await interaction.update({
       ...buildPredictionBlock(interaction.user.id, grandPrixId, "review"),
-      content: `${formatDraft(draft)}\n\nErreur: ${validation.reason}`
+      content: `Erreur: ${validation.reason}`
     });
     return;
   }
@@ -260,7 +260,7 @@ function buildBlockContent(block: PredictionBlock, draft: PredictionDraft) {
     return `Top 10 du Grand Prix - positions 6 a 10\n\n${formatFields(blockFields.race_bottom5, draft)}`;
   }
 
-  return formatDraft(draft);
+  return "Actions du prono";
 }
 
 function formatFields(fields: PredictionField[], draft: PredictionDraft) {
