@@ -25,7 +25,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
     "db:check": "tsx src/db/check.ts",
-    "dev:set-gp-state": "tsx src/db/setTestGrandPrixState.ts"
+    "dev:set-gp-state": "tsx src/db/setTestGrandPrixState.ts",
+    "dev:delete-gp": "tsx src/db/deleteGrandPrix.ts",
+    "apply:season-state": "tsx src/db/applySeasonState.ts"
   },
   "dependencies": {
     "discord.js": "^14.16.3",

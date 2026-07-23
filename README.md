@@ -58,10 +58,11 @@ npm run db:generate
 npm run db:migrate
 npm run db:seed
 npm run db:check
-npm run dev:set-gp-state -- open future
-npm run dev:set-gp-state -- locked future
-npm run dev:set-gp-state -- open past
-npm run dev:set-gp-state -- scheduled future ready
+npm run apply:season-state -- 2026
+npm run dev:set-gp-state -- australian_grand_prix_2026 open future
+npm run dev:set-gp-state -- australian_grand_prix_2026 locked future
+npm run dev:set-gp-state -- australian_grand_prix_2026 open past
+npm run dev:set-gp-state -- australian_grand_prix_2026 scheduled future ready
 npm run typecheck
 npm run build
 ```

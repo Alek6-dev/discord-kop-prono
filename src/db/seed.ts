@@ -1,7 +1,6 @@
 import { testDrivers } from "../domain/drivers.js";
-import { testGrandPrix } from "../domain/grandPrix.js";
 import { closeDb, db } from "./client.js";
-import { drivers, grandPrix, seasons } from "./schema.js";
+import { drivers, seasons } from "./schema.js";
 
 async function seed() {
   await db
@@ -47,37 +46,6 @@ async function seed() {
         }
       });
   }
-
-  await db
-    .insert(grandPrix)
-    .values({
-      id: testGrandPrix.id,
-      seasonId: "2026",
-      name: testGrandPrix.name,
-      country: "Hongrie",
-      round: 1,
-      weekendType: testGrandPrix.weekendType,
-      status: "open",
-      raceStartsAt: new Date("2026-07-26T15:00:00+02:00"),
-      qualifyingStartsAt: testGrandPrix.predictionsLockAt,
-      predictionsOpenAt: new Date("2026-07-23T10:00:00+02:00"),
-      predictionsLockAt: testGrandPrix.predictionsLockAt,
-      resultsFetchAfterAt: new Date("2026-07-26T19:00:00+02:00")
-    })
-    .onConflictDoUpdate({
-      target: grandPrix.id,
-      set: {
-        name: testGrandPrix.name,
-        country: "Hongrie",
-        round: 1,
-        weekendType: testGrandPrix.weekendType,
-        status: "open",
-        raceStartsAt: new Date("2026-07-26T15:00:00+02:00"),
-        qualifyingStartsAt: testGrandPrix.predictionsLockAt,
-        predictionsLockAt: testGrandPrix.predictionsLockAt,
-        updatedAt: new Date()
-      }
-    });
 
   console.log("Database seeded.");
 }
