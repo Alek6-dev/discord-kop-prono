@@ -5,6 +5,7 @@ import {
   Client,
   Events,
   GatewayIntentBits,
+  MessageFlags,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   type ButtonInteraction,
@@ -31,12 +32,12 @@ type PredictionField =
   | "r9"
   | "r10";
 
-type PredictionPage = "qualifying" | "race1" | "race2" | "race3" | "review";
+type PredictionBlock = "qualifying" | "race_top5" | "race_bottom5" | "review";
 
 type PredictionDraft = Partial<Record<PredictionField, string>>;
 type PredictionComponent = ButtonBuilder | StringSelectMenuBuilder;
 type PredictionComponentRow = ActionRowBuilder<PredictionComponent>;
-type PredictionPagePayload = {
+type PredictionMessagePayload = {
   content: string;
   components: PredictionComponentRow[];
 };
@@ -46,11 +47,10 @@ const predictionRepository = new InMemoryPredictionRepository();
 
 const qualifyingFields: PredictionField[] = ["q1", "q2", "q3"];
 const raceFields: PredictionField[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"];
-const pageFields: Record<PredictionPage, PredictionField[]> = {
+const blockFields: Record<PredictionBlock, PredictionField[]> = {
   qualifying: qualifyingFields,
-  race1: ["r1", "r2", "r3", "r4"],
-  race2: ["r5", "r6", "r7", "r8"],
-  race3: ["r9", "r10"],
+  race_top5: ["r1", "r2", "r3", "r4", "r5"],
+  race_bottom5: ["r6", "r7", "r8", "r9", "r10"],
   review: []
 };
 
@@ -68,20 +68,6 @@ const fieldLabels: Record<PredictionField, string> = {
   r8: "Course 8e",
   r9: "Course 9e",
   r10: "Course 10e"
-};
-
-const nextPage: Partial<Record<PredictionPage, PredictionPage>> = {
-  qualifying: "race1",
-  race1: "race2",
-  race2: "race3",
-  race3: "review"
-};
-
-const previousPage: Partial<Record<PredictionPage, PredictionPage>> = {
-  race1: "qualifying",
-  race2: "race1",
-  race3: "race2",
-  review: "race3"
 };
 
 const client = new Client({
@@ -105,8 +91,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.customId.startsWith("prediction:create:")) {
     const grandPrixId = interaction.customId.split(":")[2];
     await interaction.reply({
-      ...buildPredictionPage(interaction.user.id, grandPrixId, "qualifying"),
-      ephemeral: true
+      ...buildPredictionBlock(interaction.user.id, grandPrixId, "qualifying"),
+      flags: MessageFlags.Ephemeral
+    });
+    await interaction.followUp({
+      ...buildPredictionBlock(interaction.user.id, grandPrixId, "race_top5"),
+      flags: MessageFlags.Ephemeral
+    });
+    await interaction.followUp({
+      ...buildPredictionBlock(interaction.user.id, grandPrixId, "race_bottom5"),
+      flags: MessageFlags.Ephemeral
+    });
+    await interaction.followUp({
+      ...buildPredictionBlock(interaction.user.id, grandPrixId, "review"),
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -119,13 +117,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
       content: prediction
         ? formatPrediction(prediction)
         : "Tu n'as pas encore de prono enregistre pour ce Grand Prix.",
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
 
-  if (interaction.customId.startsWith("prediction:page:")) {
-    await handlePredictionPageButton(interaction);
+  if (interaction.customId.startsWith("prediction:review:")) {
+    await handlePredictionReview(interaction);
     return;
   }
 
@@ -139,11 +137,11 @@ async function handlePredictionSelect(interaction: StringSelectMenuInteraction) 
     return;
   }
 
-  const [, , grandPrixId, page, field] = interaction.customId.split(":") as [
+  const [, , grandPrixId, block, field] = interaction.customId.split(":") as [
     string,
     string,
     string,
-    PredictionPage,
+    PredictionBlock,
     PredictionField
   ];
   const key = predictionKey(interaction.user.id, grandPrixId);
@@ -152,18 +150,13 @@ async function handlePredictionSelect(interaction: StringSelectMenuInteraction) 
   draft[field] = interaction.values[0];
   drafts.set(key, draft);
 
-  await interaction.update(buildPredictionPage(interaction.user.id, grandPrixId, page));
+  await interaction.update(buildPredictionBlock(interaction.user.id, grandPrixId, block));
 }
 
-async function handlePredictionPageButton(interaction: ButtonInteraction) {
-  const [, , grandPrixId, page] = interaction.customId.split(":") as [
-    string,
-    string,
-    string,
-    PredictionPage
-  ];
+async function handlePredictionReview(interaction: ButtonInteraction) {
+  const grandPrixId = interaction.customId.split(":")[2];
 
-  await interaction.update(buildPredictionPage(interaction.user.id, grandPrixId, page));
+  await interaction.update(buildPredictionBlock(interaction.user.id, grandPrixId, "review"));
 }
 
 async function handlePredictionSubmit(interaction: ButtonInteraction) {
@@ -176,7 +169,7 @@ async function handlePredictionSubmit(interaction: ButtonInteraction) {
 
   if (!validation.ok) {
     await interaction.update({
-      ...buildPredictionPage(interaction.user.id, grandPrixId, "review"),
+      ...buildPredictionBlock(interaction.user.id, grandPrixId, "review"),
       content: `${formatDraft(draft)}\n\nErreur: ${validation.reason}`
     });
     return;
@@ -191,32 +184,34 @@ async function handlePredictionSubmit(interaction: ButtonInteraction) {
   });
 }
 
-function buildPredictionPage(
+function buildPredictionBlock(
   discordUserId: string,
   grandPrixId: string,
-  page: PredictionPage
-): PredictionPagePayload {
+  block: PredictionBlock
+): PredictionMessagePayload {
   const draft = drafts.get(predictionKey(discordUserId, grandPrixId)) ?? {};
-  const rows: PredictionComponentRow[] = pageFields[page].map((field) =>
-    buildDriverSelect(grandPrixId, page, field, draft[field])
+  const rows: PredictionComponentRow[] = blockFields[block].map((field) =>
+    buildDriverSelect(grandPrixId, block, field, draft[field])
   );
 
-  rows.push(buildNavigationRow(grandPrixId, page));
+  if (block === "review") {
+    rows.push(buildReviewRow(grandPrixId));
+  }
 
   return {
-    content: buildPageContent(page, draft),
+    content: buildBlockContent(block, draft),
     components: rows
   };
 }
 
 function buildDriverSelect(
   grandPrixId: string,
-  page: PredictionPage,
+  block: PredictionBlock,
   field: PredictionField,
   selectedDriverId?: string
 ) {
   const select = new StringSelectMenuBuilder()
-    .setCustomId(`prediction:select:${grandPrixId}:${page}:${field}`)
+    .setCustomId(`prediction:select:${grandPrixId}:${block}:${field}`)
     .setPlaceholder(`${fieldLabels[field]} - a selectionner`)
     .setMinValues(1)
     .setMaxValues(1)
@@ -239,56 +234,30 @@ function buildDriverSelect(
   return new ActionRowBuilder<PredictionComponent>().addComponents(select);
 }
 
-function buildNavigationRow(grandPrixId: string, page: PredictionPage) {
-  const row = new ActionRowBuilder<PredictionComponent>();
-  const previous = previousPage[page];
-  const next = nextPage[page];
-
-  if (previous) {
-    row.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`prediction:page:${grandPrixId}:${previous}`)
-        .setLabel("Retour")
-        .setStyle(ButtonStyle.Secondary)
-    );
-  }
-
-  if (next) {
-    row.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`prediction:page:${grandPrixId}:${next}`)
-        .setLabel("Suite")
-        .setStyle(ButtonStyle.Primary)
-    );
-  }
-
-  if (page === "review") {
-    row.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`prediction:submit:${grandPrixId}`)
-        .setLabel("Valider mon prono")
-        .setStyle(ButtonStyle.Success)
-    );
-  }
-
-  return row;
+function buildReviewRow(grandPrixId: string) {
+  return new ActionRowBuilder<PredictionComponent>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`prediction:review:${grandPrixId}`)
+      .setLabel("Actualiser le recap")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`prediction:submit:${grandPrixId}`)
+      .setLabel("Valider mon prono")
+      .setStyle(ButtonStyle.Success)
+  );
 }
 
-function buildPageContent(page: PredictionPage, draft: PredictionDraft) {
-  if (page === "qualifying") {
+function buildBlockContent(block: PredictionBlock, draft: PredictionDraft) {
+  if (block === "qualifying") {
     return `Top 3 des qualifs\n\n${formatFields(qualifyingFields, draft)}`;
   }
 
-  if (page === "race1") {
-    return `Top 10 du Grand Prix - positions 1 a 4\n\n${formatFields(pageFields.race1, draft)}`;
+  if (block === "race_top5") {
+    return `Top 10 du Grand Prix - positions 1 a 5\n\n${formatFields(blockFields.race_top5, draft)}`;
   }
 
-  if (page === "race2") {
-    return `Top 10 du Grand Prix - positions 5 a 8\n\n${formatFields(pageFields.race2, draft)}`;
-  }
-
-  if (page === "race3") {
-    return `Top 10 du Grand Prix - positions 9 a 10\n\n${formatFields(pageFields.race3, draft)}`;
+  if (block === "race_bottom5") {
+    return `Top 10 du Grand Prix - positions 6 a 10\n\n${formatFields(blockFields.race_bottom5, draft)}`;
   }
 
   return formatDraft(draft);

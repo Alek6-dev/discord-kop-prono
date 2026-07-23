@@ -89,6 +89,7 @@ message de Grand Prix
 -> bouton Faire mon prono
 -> champs position par position pour le top 3 des qualifs
 -> champs position par position pour le top 10 du Grand Prix
+-> affichage en plusieurs messages Discord ephemeres : qualifs, course 1-5, course 6-10, validation
 -> validation anti-doublon dans chaque liste
 -> sauvegarde
 -> bouton Voir mon prono
