@@ -23,16 +23,12 @@ export type Driver = {
 export type PredictionInput = {
   grandPrixId: string;
   discordUserId: string;
-  polemanDriverId: string;
-  p1DriverId: string;
-  p2DriverId: string;
-  p3DriverId: string;
-  fastestLapDriverId?: string;
+  qualifyingTop3DriverIds: string[];
+  raceTop10DriverIds: string[];
 };
 
 export type NormalizedRaceResult = {
   grandPrixId: string;
-  polemanDriverId: string;
+  qualifyingTop3DriverIds: string[];
   raceTop10DriverIds: string[];
-  fastestLapDriverId?: string;
 };

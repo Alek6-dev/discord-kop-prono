@@ -56,7 +56,9 @@ Le premier objectif est de valider le coeur du jeu en salon Discord prive :
 message de Grand Prix
 -> bouton Faire mon prono
 -> choix pilotes
--> validation anti-doublon podium
+-> top 3 des qualifs
+-> top 10 du Grand Prix
+-> validation anti-doublon dans chaque liste
 -> sauvegarde
 -> bouton Voir mon prono
 ```

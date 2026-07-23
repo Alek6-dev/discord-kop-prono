@@ -75,19 +75,8 @@ export const predictions = pgTable(
     discordUserId: text("discord_user_id")
       .notNull()
       .references(() => discordPlayers.discordUserId),
-    polemanDriverId: text("poleman_driver_id")
-      .notNull()
-      .references(() => drivers.id),
-    p1DriverId: text("p1_driver_id")
-      .notNull()
-      .references(() => drivers.id),
-    p2DriverId: text("p2_driver_id")
-      .notNull()
-      .references(() => drivers.id),
-    p3DriverId: text("p3_driver_id")
-      .notNull()
-      .references(() => drivers.id),
-    fastestLapDriverId: text("fastest_lap_driver_id").references(() => drivers.id),
+    qualifyingTop3DriverIds: jsonb("qualifying_top3_driver_ids").$type<string[]>().notNull(),
+    raceTop10DriverIds: jsonb("race_top10_driver_ids").$type<string[]>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
   },
@@ -100,9 +89,8 @@ export const raceResults = pgTable("race_results", {
   grandPrixId: text("grand_prix_id")
     .primaryKey()
     .references(() => grandPrix.id),
-  polemanDriverId: text("poleman_driver_id").references(() => drivers.id),
+  qualifyingTop3DriverIds: jsonb("qualifying_top3_driver_ids").$type<string[]>().notNull(),
   raceTop10DriverIds: jsonb("race_top10_driver_ids").$type<string[]>().notNull(),
-  fastestLapDriverId: text("fastest_lap_driver_id").references(() => drivers.id),
   source: text("source"),
   fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()

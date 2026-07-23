@@ -85,18 +85,15 @@ Le drag and drop n'est pas faisable directement dans Discord.
 La solution retenue pour l'experience joueur est :
 
 - plusieurs menus deroulants visibles dans le parcours de prono
-- un menu pour P1
-- un menu pour P2
-- un menu pour P3
-- un menu pour le poleman
-- un menu pour le meilleur tour, si ce champ est conserve
+- trois menus pour le top 3 des qualifications : Q1, Q2, Q3
+- dix menus pour le top 10 du Grand Prix : R1 a R10
 - validation anti-doublon au moment de la soumission
 
 Le choix se fait donc en selectionnant les pilotes dans des listes.
 
-Une alternative avait ete discutee : parcours sequentiel P1 puis P2 puis P3, avec retrait automatique des pilotes deja selectionnes. Cette approche est techniquement possible, mais moins confortable car l'utilisateur peut vouloir modifier son P1 apres avoir choisi P3.
+Une alternative avait ete discutee : parcours sequentiel position par position, avec retrait automatique des pilotes deja selectionnes. Cette approche est techniquement possible, mais moins confortable car l'utilisateur peut vouloir modifier un choix precedent apres avoir rempli une autre position.
 
-Decision retenue : afficher les champs de podium ensemble et bloquer proprement a la validation si le meme pilote est selectionne plusieurs fois.
+Decision retenue : faire pronostiquer pour le moment le top 3 des qualifications et le top 10 du Grand Prix, puis bloquer proprement a la validation si le meme pilote est selectionne plusieurs fois dans une meme liste.
 
 ### 3.5 Emojis pilotes
 
@@ -166,13 +163,16 @@ Exemple de structure normalisee :
 ```json
 {
   "grandPrixId": "hungary_2026",
-  "poleman": "charles_leclerc",
+  "qualifyingTop3": [
+    "charles_leclerc",
+    "max_verstappen",
+    "lando_norris"
+  ],
   "raceTop10": [
     "max_verstappen",
     "lando_norris",
     "charles_leclerc"
-  ],
-  "fastestLap": "lewis_hamilton"
+  ]
 }
 ```
 
@@ -228,9 +228,8 @@ Pronostics ouverts jusqu'au samedi 25 juillet, 15:59.
 Type de week-end : normal
 
 A pronostiquer :
-- Pole position
-- Podium P1 / P2 / P3
-- Meilleur tour
+- Top 3 des qualifications
+- Top 10 du Grand Prix
 
 [Faire mon prono]
 [Voir mon prono]
@@ -267,14 +266,15 @@ Validation minimale :
 
 - GP ouvert
 - utilisateur Discord valide
-- P1, P2 et P3 doivent etre differents
+- les 3 pilotes du top 3 des qualifications doivent etre differents
+- les 10 pilotes du top 10 du Grand Prix doivent etre differents
 - les pilotes choisis doivent appartenir a la liste officielle active
 - modification autorisee uniquement avant deadline
 
 Message d'erreur exemple :
 
 ```text
-Tu as selectionne Carlos Sainz plusieurs fois dans ton podium. Choisis trois pilotes differents avant de valider.
+Tu as selectionne Carlos Sainz plusieurs fois dans ton top 10 de course. Choisis dix pilotes differents avant de valider.
 ```
 
 Confirmation exemple :
@@ -293,11 +293,22 @@ Le bot repond en prive :
 ```text
 Ton prono - GP de Hongrie
 
-Pole : Charles Leclerc
-P1 : Lando Norris
-P2 : Max Verstappen
-P3 : Oscar Piastri
-Meilleur tour : Lewis Hamilton
+Qualifs :
+1. Charles Leclerc
+2. Max Verstappen
+3. Lando Norris
+
+Course :
+1. Lando Norris
+2. Max Verstappen
+3. Oscar Piastri
+4. Charles Leclerc
+5. Lewis Hamilton
+6. George Russell
+7. Carlos Sainz
+8. Alexander Albon
+9. Fernando Alonso
+10. Pierre Gasly
 ```
 
 ### 4.5 Resultats et classements
@@ -795,7 +806,9 @@ Fonctionnalites :
 - bouton "Faire mon prono"
 - menus deroulants pilotes
 - emojis pilotes dans les options
-- validation anti-doublon podium
+- pronostic top 3 des qualifications
+- pronostic top 10 du Grand Prix
+- validation anti-doublon dans chaque liste
 - enregistrement du prono
 - bouton "Voir mon prono"
 - confirmation privee
@@ -917,7 +930,8 @@ Le scoring ne doit pas dependre directement du format brut d'une API.
 Ces points restent a trancher plus tard, sans bloquer la premiere iteration :
 
 - Bareme exact des points.
-- Champs definitifs du prono : podium, pole, fastest lap, bonus ou non.
+- Bareme exact pour le top 3 des qualifications et le top 10 du Grand Prix.
+- Bonus eventuels ou non.
 - Source exacte de resultats F1.
 - Details exacts du deploiement Fly.io : une app multi-process ou plusieurs apps separees.
 - Details exacts du schema Drizzle.
