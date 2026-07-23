@@ -1,6 +1,7 @@
 import type { Driver } from "./types.js";
+import { driverEmojiById } from "./driverEmojis.js";
 
-export const testDrivers: Driver[] = [
+const drivers: Omit<Driver, "emoji">[] = [
   { id: "max_verstappen", label: "Max Verstappen", team: "Red Bull Racing", number: 3 },
   { id: "isack_hadjar", label: "Isack Hadjar", team: "Red Bull Racing", number: 6 },
   { id: "lando_norris", label: "Lando Norris", team: "McLaren", number: 1 },
@@ -24,6 +25,19 @@ export const testDrivers: Driver[] = [
   { id: "valtteri_bottas", label: "Valtteri Bottas", team: "Cadillac", number: 77 },
   { id: "sergio_perez", label: "Sergio Perez", team: "Cadillac", number: 11 }
 ];
+
+export const testDrivers: Driver[] = drivers.map((driver) => {
+  const emoji = driverEmojiById[driver.id];
+
+  if (!emoji || emoji.id === "TODO" || emoji.name === "TODO") {
+    return driver;
+  }
+
+  return {
+    ...driver,
+    emoji
+  };
+});
 
 export function findDriver(driverId: string, drivers: Driver[] = testDrivers): Driver | undefined {
   return drivers.find((driver) => driver.id === driverId);
