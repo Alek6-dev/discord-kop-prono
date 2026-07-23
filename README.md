@@ -46,6 +46,7 @@ copy .env.example .env
 npm run dev:admin
 npm run dev:bot
 npm run dev:worker
+npm run diagnose:discord
 npm run post:test-gp
 npm run print:invite-url
 npm run typecheck
