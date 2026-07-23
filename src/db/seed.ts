@@ -58,6 +58,8 @@ async function seed() {
       round: 1,
       weekendType: testGrandPrix.weekendType,
       status: "open",
+      raceStartsAt: new Date("2026-07-26T15:00:00+02:00"),
+      qualifyingStartsAt: testGrandPrix.predictionsLockAt,
       predictionsOpenAt: new Date("2026-07-23T10:00:00+02:00"),
       predictionsLockAt: testGrandPrix.predictionsLockAt,
       resultsFetchAfterAt: new Date("2026-07-26T19:00:00+02:00")
@@ -70,6 +72,8 @@ async function seed() {
         round: 1,
         weekendType: testGrandPrix.weekendType,
         status: "open",
+        raceStartsAt: new Date("2026-07-26T15:00:00+02:00"),
+        qualifyingStartsAt: testGrandPrix.predictionsLockAt,
         predictionsLockAt: testGrandPrix.predictionsLockAt,
         updatedAt: new Date()
       }

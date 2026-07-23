@@ -64,6 +64,10 @@ function mapGrandPrix(row: GrandPrixRow): GrandPrix {
     name: row.name,
     status: row.status,
     weekendType: row.weekendType,
+    raceStartsAt: row.raceStartsAt,
+    qualifyingStartsAt: row.qualifyingStartsAt ?? undefined,
+    sprintStartsAt: row.sprintStartsAt ?? undefined,
+    sprintQualifyingStartsAt: row.sprintQualifyingStartsAt ?? undefined,
     predictionsOpenAt: row.predictionsOpenAt ?? undefined,
     predictionsLockAt: row.predictionsLockAt
   };

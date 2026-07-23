@@ -8,6 +8,13 @@
       "when": 1784824125552,
       "tag": "0000_powerful_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784826981876,
+      "tag": "0001_luxuriant_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

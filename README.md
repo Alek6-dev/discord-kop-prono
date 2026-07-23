@@ -49,6 +49,7 @@ npm run dev:worker
 npm run worker:tick
 npm run diagnose:discord
 npm run list:emojis
+npm run import:season -- 2026
 npm run post:test-gp
 npm run print:invite-url
 npm run docker:up

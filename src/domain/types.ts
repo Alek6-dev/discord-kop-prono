@@ -14,6 +14,10 @@ export type GrandPrix = {
   name: string;
   status: GrandPrixStatus;
   weekendType: WeekendType;
+  raceStartsAt: Date;
+  qualifyingStartsAt?: Date;
+  sprintStartsAt?: Date;
+  sprintQualifyingStartsAt?: Date;
   predictionsOpenAt?: Date;
   predictionsLockAt: Date;
 };

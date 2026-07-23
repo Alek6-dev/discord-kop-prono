@@ -12,6 +12,7 @@
     "diagnose:discord": "tsx src/bot/diagnoseDiscordAccess.ts",
     "list:emojis": "tsx src/bot/listGuildEmojis.ts",
     "print:invite-url": "tsx src/bot/printInviteUrl.ts",
+    "import:season": "tsx src/import/importSeason.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "start:bot": "node dist/src/bot/index.js",
