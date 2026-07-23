@@ -1,6 +1,7 @@
 import { ChannelType, Client, Events, GatewayIntentBits } from "discord.js";
 import { env } from "../config/env.js";
-import { testGrandPrix } from "../domain/grandPrix.js";
+import { closeDb } from "../db/client.js";
+import { PgGrandPrixRepository } from "../db/grandPrixRepository.js";
 import { buildGrandPrixMessage } from "./grandPrixMessage.js";
 
 if (!env.DISCORD_TOKEN) {
@@ -12,6 +13,7 @@ if (!env.DISCORD_PRONOSTICS_CHANNEL_ID) {
 }
 
 const pronosticsChannelId = env.DISCORD_PRONOSTICS_CHANNEL_ID;
+const grandPrixRepository = new PgGrandPrixRepository();
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -25,7 +27,13 @@ client.once(Events.ClientReady, async () => {
       throw new Error("DISCORD_PRONOSTICS_CHANNEL_ID must target a text channel.");
     }
 
-    const message = await channel.send(buildGrandPrixMessage(testGrandPrix));
+    const grandPrix = await grandPrixRepository.get("hungary_2026");
+
+    if (!grandPrix) {
+      throw new Error("Test Grand Prix hungary_2026 was not found. Run npm run db:seed first.");
+    }
+
+    const message = await channel.send(buildGrandPrixMessage(grandPrix));
 
     console.log(`Posted test Grand Prix message: ${message.url}`);
   } catch (error) {
@@ -41,6 +49,7 @@ client.once(Events.ClientReady, async () => {
     );
     throw error;
   } finally {
+    await closeDb();
     await client.destroy();
   }
 });

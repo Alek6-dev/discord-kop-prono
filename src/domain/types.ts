@@ -9,6 +9,14 @@ export type GrandPrixStatus =
 
 export type WeekendType = "normal" | "sprint";
 
+export type GrandPrix = {
+  id: string;
+  name: string;
+  status: GrandPrixStatus;
+  weekendType: WeekendType;
+  predictionsLockAt: Date;
+};
+
 export type Driver = {
   id: string;
   label: string;

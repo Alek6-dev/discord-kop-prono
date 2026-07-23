@@ -54,6 +54,10 @@ npm run docker:up
 npm run db:generate
 npm run db:migrate
 npm run db:seed
+npm run db:check
+npm run dev:set-gp-state -- open future
+npm run dev:set-gp-state -- locked future
+npm run dev:set-gp-state -- open past
 npm run typecheck
 npm run build
 ```
@@ -82,6 +86,29 @@ npm run post:test-gp
 Ouvre d'abord l'URL affichee par `npm run print:invite-url` pour inviter le bot sur le serveur.
 
 Le bot doit ensuite tourner avec `npm run dev:bot` pour reagir aux boutons apres publication du message.
+
+Pour tester les regles d'ouverture/fermeture :
+
+```bash
+npm run dev:set-gp-state -- open future
+npm run post:test-gp
+```
+
+Le message affiche `Faire mon prono` et `Voir mon prono`.
+
+```bash
+npm run dev:set-gp-state -- locked future
+npm run post:test-gp
+```
+
+Le message affiche seulement `Voir mon prono`.
+
+```bash
+npm run dev:set-gp-state -- open past
+npm run post:test-gp
+```
+
+Le message affiche seulement `Voir mon prono`, car la deadline est depassee.
 
 ## Premiere milestone produit
 
