@@ -49,8 +49,9 @@ npm run dev:worker
 npm run worker:tick
 npm run diagnose:discord
 npm run list:emojis
+npm run list:gp
 npm run import:season -- 2026
-npm run post:test-gp
+npm run post:gp -- australian_grand_prix_2026
 npm run print:invite-url
 npm run docker:up
 npm run db:generate
@@ -93,22 +94,22 @@ Le bot doit ensuite tourner avec `npm run dev:bot` pour reagir aux boutons apres
 Pour tester les regles d'ouverture/fermeture :
 
 ```bash
-npm run dev:set-gp-state -- open future
-npm run post:test-gp
+npm run dev:set-gp-state -- australian_grand_prix_2026 open future
+npm run post:gp -- australian_grand_prix_2026
 ```
 
 Le message affiche `Faire mon prono` et `Voir mon prono`.
 
 ```bash
-npm run dev:set-gp-state -- locked future
-npm run post:test-gp
+npm run dev:set-gp-state -- australian_grand_prix_2026 locked future
+npm run post:gp -- australian_grand_prix_2026
 ```
 
 Le message affiche seulement `Voir mon prono`.
 
 ```bash
-npm run dev:set-gp-state -- open past
-npm run post:test-gp
+npm run dev:set-gp-state -- australian_grand_prix_2026 open past
+npm run post:gp -- australian_grand_prix_2026
 ```
 
 Le message affiche seulement `Voir mon prono`, car la deadline est depassee.
@@ -116,14 +117,14 @@ Le message affiche seulement `Voir mon prono`, car la deadline est depassee.
 Pour tester le worker manuel :
 
 ```bash
-npm run dev:set-gp-state -- open past
+npm run dev:set-gp-state -- australian_grand_prix_2026 open past
 npm run worker:tick
 ```
 
 Le worker passe le GP en `locked` et edite son message Discord.
 
 ```bash
-npm run dev:set-gp-state -- scheduled future ready
+npm run dev:set-gp-state -- australian_grand_prix_2026 scheduled future ready
 npm run worker:tick
 ```
 

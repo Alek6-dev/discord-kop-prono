@@ -2,13 +2,14 @@ import { eq } from "drizzle-orm";
 import { closeDb, db } from "./client.js";
 import { grandPrix } from "./schema.js";
 
-const status = process.argv[2];
-const deadlineMode = process.argv[3] ?? "future";
-const openMode = process.argv[4] ?? "ready";
+const grandPrixId = process.argv[2];
+const status = process.argv[3];
+const deadlineMode = process.argv[4] ?? "future";
+const openMode = process.argv[5] ?? "ready";
 
-if (!status || !["scheduled", "open", "locked"].includes(status)) {
+if (!grandPrixId || !status || !["scheduled", "open", "locked"].includes(status)) {
   throw new Error(
-    "Usage: npm run dev:set-gp-state -- <scheduled|open|locked> [future|past] [ready|not-ready]"
+    "Usage: npm run dev:set-gp-state -- <grandPrixId> <scheduled|open|locked> [future|past] [ready|not-ready]"
   );
 }
 
@@ -38,9 +39,9 @@ try {
       predictionsLockAt,
       updatedAt: new Date()
     })
-    .where(eq(grandPrix.id, "hungary_2026"));
+    .where(eq(grandPrix.id, grandPrixId));
 
-  console.log(`hungary_2026 status=${status} deadline=${deadlineMode} open=${openMode}`);
+  console.log(`${grandPrixId} status=${status} deadline=${deadlineMode} open=${openMode}`);
 } finally {
   await closeDb();
 }

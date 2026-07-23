@@ -5,7 +5,13 @@ import { PgGrandPrixRepository } from "../db/grandPrixRepository.js";
 import { GrandPrixPublisher } from "./grandPrixPublisher.js";
 
 if (!env.DISCORD_TOKEN) {
-  throw new Error("DISCORD_TOKEN is required to post the test Grand Prix message.");
+  throw new Error("DISCORD_TOKEN is required to post the Grand Prix message.");
+}
+
+const grandPrixId = process.argv[2];
+
+if (!grandPrixId) {
+  throw new Error("Usage: npm run post:gp -- <grandPrixId>");
 }
 
 const grandPrixRepository = new PgGrandPrixRepository();
@@ -16,20 +22,20 @@ const client = new Client({
 
 client.once(Events.ClientReady, async () => {
   try {
-    const grandPrix = await grandPrixRepository.get("hungary_2026");
+    const grandPrix = await grandPrixRepository.get(grandPrixId);
 
     if (!grandPrix) {
-      throw new Error("Test Grand Prix hungary_2026 was not found. Run npm run db:seed first.");
+      throw new Error(`Grand Prix ${grandPrixId} was not found. Run npm run list:gp to see available IDs.`);
     }
 
     const publisher = new GrandPrixPublisher(client);
     const messageUrl = await publisher.publish(grandPrix);
 
-    console.log(`Published test Grand Prix message: ${messageUrl}`);
+    console.log(`Published Grand Prix message: ${messageUrl}`);
   } catch (error) {
     console.error(
       [
-        "Unable to post the test Grand Prix message.",
+        "Unable to post the Grand Prix message.",
         "",
         "Check that:",
         "- the bot has been invited to the Discord server",

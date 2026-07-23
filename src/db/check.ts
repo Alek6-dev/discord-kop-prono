@@ -15,10 +15,16 @@ try {
   console.log(`predictions: ${predictionCount.value}`);
   console.log(`job_logs: ${jobLogCount.value}`);
 
-  const [testGrandPrix] = await db.select().from(grandPrix).limit(1);
+  const grandPrixByStatus = await db
+    .select({
+      status: grandPrix.status,
+      value: count()
+    })
+    .from(grandPrix)
+    .groupBy(grandPrix.status);
 
-  if (testGrandPrix) {
-    console.log(`grand_prix_status: ${testGrandPrix.status}`);
+  for (const status of grandPrixByStatus) {
+    console.log(`grand_prix_${status.status}: ${status.value}`);
   }
 } finally {
   await closeDb();

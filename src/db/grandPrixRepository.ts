@@ -29,6 +29,15 @@ export class PgGrandPrixRepository {
     return row ? mapGrandPrix(row) : undefined;
   }
 
+  async list(): Promise<GrandPrix[]> {
+    const rows = await db
+      .select()
+      .from(grandPrix)
+      .orderBy(asc(grandPrix.seasonId), asc(grandPrix.round));
+
+    return rows.map(mapGrandPrix);
+  }
+
   async getNextScheduledToOpen(now = new Date()): Promise<GrandPrix | undefined> {
     const [row] = await db
       .select()
@@ -63,6 +72,7 @@ function mapGrandPrix(row: GrandPrixRow): GrandPrix {
     id: row.id,
     name: row.name,
     status: row.status,
+    round: row.round,
     weekendType: row.weekendType,
     raceStartsAt: row.raceStartsAt,
     qualifyingStartsAt: row.qualifyingStartsAt ?? undefined,

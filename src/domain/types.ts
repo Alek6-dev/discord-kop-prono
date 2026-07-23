@@ -13,6 +13,7 @@ export type GrandPrix = {
   id: string;
   name: string;
   status: GrandPrixStatus;
+  round: number;
   weekendType: WeekendType;
   raceStartsAt: Date;
   qualifyingStartsAt?: Date;
