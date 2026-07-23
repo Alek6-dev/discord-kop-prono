@@ -47,6 +47,7 @@ npm run dev:admin
 npm run dev:bot
 npm run dev:worker
 npm run post:test-gp
+npm run print:invite-url
 npm run typecheck
 npm run build
 npm run db:generate
@@ -69,11 +70,14 @@ DISCORD_ADMIN_CHANNEL_ID       ID du salon admin/logs prive.
 Pour tester le message de Grand Prix dans Discord :
 
 ```bash
+npm run print:invite-url
 npm run dev:bot
 npm run post:test-gp
 ```
 
-Le bot doit tourner avec `npm run dev:bot` pour reagir aux boutons apres publication du message.
+Ouvre d'abord l'URL affichee par `npm run print:invite-url` pour inviter le bot sur le serveur.
+
+Le bot doit ensuite tourner avec `npm run dev:bot` pour reagir aux boutons apres publication du message.
 
 ## Premiere milestone produit
 

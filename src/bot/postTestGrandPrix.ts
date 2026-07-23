@@ -1,4 +1,4 @@
-import { ChannelType, Client, GatewayIntentBits } from "discord.js";
+import { ChannelType, Client, Events, GatewayIntentBits } from "discord.js";
 import { env } from "../config/env.js";
 import { testGrandPrix } from "../domain/grandPrix.js";
 import { buildGrandPrixMessage } from "./grandPrixMessage.js";
@@ -17,7 +17,7 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-client.once("ready", async () => {
+client.once(Events.ClientReady, async () => {
   try {
     const channel = await client.channels.fetch(pronosticsChannelId);
 
@@ -28,6 +28,18 @@ client.once("ready", async () => {
     const message = await channel.send(buildGrandPrixMessage(testGrandPrix));
 
     console.log(`Posted test Grand Prix message: ${message.url}`);
+  } catch (error) {
+    console.error(
+      [
+        "Unable to post the test Grand Prix message.",
+        "",
+        "Check that:",
+        "- the bot has been invited to the Discord server",
+        "- DISCORD_PRONOSTICS_CHANNEL_ID targets a text channel in that server",
+        "- the bot can view the channel and send messages"
+      ].join("\n")
+    );
+    throw error;
   } finally {
     await client.destroy();
   }
