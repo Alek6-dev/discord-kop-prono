@@ -1,38 +1,59 @@
+import { pathToFileURL } from "node:url";
 import { Client, Events, GatewayIntentBits } from "discord.js";
-import { env } from "../config/env.js";
 import { GrandPrixPublisher } from "../bot/grandPrixPublisher.js";
+import { env } from "../config/env.js";
 import { closeDb } from "../db/client.js";
 import { PgGrandPrixRepository } from "../db/grandPrixRepository.js";
 import { PgJobLogRepository } from "../db/jobLogRepository.js";
 
-if (!env.DISCORD_TOKEN) {
-  throw new Error("DISCORD_TOKEN is required to run worker tick.");
+export async function runWorkerTick(client: Client, now = new Date()): Promise<void> {
+  const grandPrixRepository = new PgGrandPrixRepository();
+  const jobLogRepository = new PgJobLogRepository();
+  const publisher = new GrandPrixPublisher(client);
+
+  await lockExpiredScheduledGrandPrix(grandPrixRepository, jobLogRepository, now);
+  await lockExpiredOpenGrandPrix(grandPrixRepository, jobLogRepository, publisher, now);
+  await openNextScheduledGrandPrix(grandPrixRepository, jobLogRepository, publisher, now);
 }
 
-const grandPrixRepository = new PgGrandPrixRepository();
-const jobLogRepository = new PgJobLogRepository();
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
+async function lockExpiredScheduledGrandPrix(
+  grandPrixRepository: PgGrandPrixRepository,
+  jobLogRepository: PgJobLogRepository,
+  now: Date
+) {
+  const expiredScheduledGrandPrix = await grandPrixRepository.listExpiredScheduled(now);
 
-client.once(Events.ClientReady, async () => {
-  try {
-    const publisher = new GrandPrixPublisher(client);
-
-    await lockExpiredOpenGrandPrix(publisher);
-    await openNextScheduledGrandPrix(publisher);
-  } finally {
-    await closeDb();
-    await client.destroy();
+  if (expiredScheduledGrandPrix.length === 0) {
+    await jobLogRepository.create({
+      jobName: "lock_expired_scheduled_grand_prix",
+      status: "skipped",
+      message: "No expired scheduled Grand Prix."
+    });
+    console.log("lock_expired_scheduled_grand_prix skipped: no expired scheduled GP.");
+    return;
   }
-});
 
-await client.login(env.DISCORD_TOKEN);
+  for (const grandPrix of expiredScheduledGrandPrix) {
+    await grandPrixRepository.updateStatus(grandPrix.id, "locked");
+    await jobLogRepository.create({
+      jobName: "lock_expired_scheduled_grand_prix",
+      status: "success",
+      grandPrixId: grandPrix.id,
+      message: "Scheduled Grand Prix deadline already passed, locked without publishing."
+    });
+    console.log(`lock_expired_scheduled_grand_prix success: ${grandPrix.id}`);
+  }
+}
 
-async function lockExpiredOpenGrandPrix(publisher: GrandPrixPublisher) {
-  const openGrandPrix = await grandPrixRepository.getOpen();
+async function lockExpiredOpenGrandPrix(
+  grandPrixRepository: PgGrandPrixRepository,
+  jobLogRepository: PgJobLogRepository,
+  publisher: GrandPrixPublisher,
+  now: Date
+) {
+  const openGrandPrix = await grandPrixRepository.listOpen();
 
-  if (!openGrandPrix) {
+  if (openGrandPrix.length === 0) {
     await jobLogRepository.create({
       jobName: "lock_expired_grand_prix",
       status: "skipped",
@@ -42,37 +63,56 @@ async function lockExpiredOpenGrandPrix(publisher: GrandPrixPublisher) {
     return;
   }
 
-  if (openGrandPrix.predictionsLockAt > new Date()) {
+  let lockedCount = 0;
+
+  for (const grandPrix of openGrandPrix) {
+    if (grandPrix.predictionsLockAt > now) {
+      await jobLogRepository.create({
+        jobName: "lock_expired_grand_prix",
+        status: "skipped",
+        grandPrixId: grandPrix.id,
+        message: "Open Grand Prix deadline is still in the future."
+      });
+      console.log(`lock_expired_grand_prix skipped: ${grandPrix.id} still open.`);
+      continue;
+    }
+
+    await grandPrixRepository.updateStatus(grandPrix.id, "locked");
+    const lockedGrandPrix = await grandPrixRepository.get(grandPrix.id);
+
+    if (!lockedGrandPrix) {
+      throw new Error(`Grand Prix ${grandPrix.id} disappeared after locking.`);
+    }
+
+    const messageUrl = await publisher.publish(lockedGrandPrix);
+
     await jobLogRepository.create({
       jobName: "lock_expired_grand_prix",
-      status: "skipped",
-      grandPrixId: openGrandPrix.id,
-      message: "Open Grand Prix deadline is still in the future."
+      status: "success",
+      grandPrixId: lockedGrandPrix.id,
+      message: "Grand Prix predictions locked.",
+      metadata: { messageUrl }
     });
-    console.log(`lock_expired_grand_prix skipped: ${openGrandPrix.id} still open.`);
-    return;
+    lockedCount += 1;
+    console.log(`lock_expired_grand_prix success: ${lockedGrandPrix.id}`);
   }
 
-  await grandPrixRepository.updateStatus(openGrandPrix.id, "locked");
-  const lockedGrandPrix = await grandPrixRepository.get(openGrandPrix.id);
-
-  if (!lockedGrandPrix) {
-    throw new Error(`Grand Prix ${openGrandPrix.id} disappeared after locking.`);
+  if (openGrandPrix.length > 1) {
+    await jobLogRepository.create({
+      jobName: "lock_expired_grand_prix",
+      status: lockedCount > 0 ? "success" : "skipped",
+      message: "Multiple open Grand Prix detected during lock check.",
+      metadata: { openCount: openGrandPrix.length, lockedCount }
+    });
   }
-
-  const messageUrl = await publisher.publish(lockedGrandPrix);
-
-  await jobLogRepository.create({
-    jobName: "lock_expired_grand_prix",
-    status: "success",
-    grandPrixId: lockedGrandPrix.id,
-    message: "Grand Prix predictions locked.",
-    metadata: { messageUrl }
-  });
-  console.log(`lock_expired_grand_prix success: ${lockedGrandPrix.id}`);
 }
 
-async function openNextScheduledGrandPrix(publisher: GrandPrixPublisher) {
+async function openNextScheduledGrandPrix(
+  grandPrixRepository: PgGrandPrixRepository,
+  jobLogRepository: PgJobLogRepository,
+  publisher: GrandPrixPublisher,
+  now: Date
+) {
   const currentOpenGrandPrix = await grandPrixRepository.getOpen();
 
   if (currentOpenGrandPrix) {
@@ -86,7 +126,7 @@ async function openNextScheduledGrandPrix(publisher: GrandPrixPublisher) {
     return;
   }
 
-  const nextGrandPrix = await grandPrixRepository.getNextScheduledToOpen();
+  const nextGrandPrix = await grandPrixRepository.getNextScheduledToOpen(now);
 
   if (!nextGrandPrix) {
     await jobLogRepository.create({
@@ -115,4 +155,29 @@ async function openNextScheduledGrandPrix(publisher: GrandPrixPublisher) {
     metadata: { messageUrl }
   });
   console.log(`open_scheduled_grand_prix success: ${openGrandPrix.id}`);
+}
+
+async function runOnceFromCli() {
+  if (!env.DISCORD_TOKEN) {
+    throw new Error("DISCORD_TOKEN is required to run worker tick.");
+  }
+
+  const client = new Client({
+    intents: [GatewayIntentBits.Guilds]
+  });
+
+  client.once(Events.ClientReady, async () => {
+    try {
+      await runWorkerTick(client);
+    } finally {
+      await closeDb();
+      client.destroy();
+    }
+  });
+
+  await client.login(env.DISCORD_TOKEN);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  await runOnceFromCli();
 }

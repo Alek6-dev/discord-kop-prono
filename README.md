@@ -132,6 +132,14 @@ npm run worker:tick
 
 Le worker passe le GP en `open` et publie ou edite son message Discord.
 
+Pour laisser le worker tourner en continu :
+
+```bash
+npm run dev:worker
+```
+
+Il verifie periodiquement les deadlines, ferme les GP expires, ouvre le prochain GP eligible et publie/edite automatiquement le message Discord du GP ouvert. L'intervalle se regle avec `WORKER_TICK_INTERVAL_MS`.
+
 ## Premiere milestone produit
 
 Le premier objectif est de valider le coeur du jeu en salon Discord prive :

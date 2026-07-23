@@ -11,7 +11,8 @@ const envSchema = z.object({
   DISCORD_ADMIN_CHANNEL_ID: z.string().min(1).optional(),
   DATABASE_URL: z.string().url(),
   ADMIN_HOST: z.string().default("127.0.0.1"),
-  ADMIN_PORT: z.coerce.number().int().positive().default(3000)
+  ADMIN_PORT: z.coerce.number().int().positive().default(3000),
+  WORKER_TICK_INTERVAL_MS: z.coerce.number().int().positive().default(60_000)
 });
 
 export const env = envSchema.parse(process.env);

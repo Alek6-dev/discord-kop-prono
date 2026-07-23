@@ -1,4 +1,4 @@
-import { and, asc, eq, lte } from "drizzle-orm";
+import { and, asc, eq, gt, lte } from "drizzle-orm";
 import type { GrandPrix, GrandPrixStatus } from "../domain/types.js";
 import { db } from "./client.js";
 import { grandPrix } from "./schema.js";
@@ -29,6 +29,16 @@ export class PgGrandPrixRepository {
     return row ? mapGrandPrix(row) : undefined;
   }
 
+  async listOpen(): Promise<GrandPrix[]> {
+    const rows = await db
+      .select()
+      .from(grandPrix)
+      .where(eq(grandPrix.status, "open"))
+      .orderBy(asc(grandPrix.predictionsLockAt), asc(grandPrix.round));
+
+    return rows.map(mapGrandPrix);
+  }
+
   async list(): Promise<GrandPrix[]> {
     const rows = await db
       .select()
@@ -45,13 +55,29 @@ export class PgGrandPrixRepository {
       .where(
         and(
           eq(grandPrix.status, "scheduled"),
-          lte(grandPrix.predictionsOpenAt, now)
+          lte(grandPrix.predictionsOpenAt, now),
+          gt(grandPrix.predictionsLockAt, now)
         )
       )
       .orderBy(asc(grandPrix.predictionsOpenAt), asc(grandPrix.round))
       .limit(1);
 
     return row ? mapGrandPrix(row) : undefined;
+  }
+
+  async listExpiredScheduled(now = new Date()): Promise<GrandPrix[]> {
+    const rows = await db
+      .select()
+      .from(grandPrix)
+      .where(
+        and(
+          eq(grandPrix.status, "scheduled"),
+          lte(grandPrix.predictionsLockAt, now)
+        )
+      )
+      .orderBy(asc(grandPrix.predictionsLockAt), asc(grandPrix.round));
+
+    return rows.map(mapGrandPrix);
   }
 
   async updateStatus(grandPrixId: string, status: GrandPrixStatus): Promise<void> {
