@@ -46,6 +46,7 @@ copy .env.example .env
 npm run dev:admin
 npm run dev:bot
 npm run dev:worker
+npm run worker:tick
 npm run diagnose:discord
 npm run list:emojis
 npm run post:test-gp
@@ -58,6 +59,7 @@ npm run db:check
 npm run dev:set-gp-state -- open future
 npm run dev:set-gp-state -- locked future
 npm run dev:set-gp-state -- open past
+npm run dev:set-gp-state -- scheduled future ready
 npm run typecheck
 npm run build
 ```
@@ -109,6 +111,22 @@ npm run post:test-gp
 ```
 
 Le message affiche seulement `Voir mon prono`, car la deadline est depassee.
+
+Pour tester le worker manuel :
+
+```bash
+npm run dev:set-gp-state -- open past
+npm run worker:tick
+```
+
+Le worker passe le GP en `locked` et edite son message Discord.
+
+```bash
+npm run dev:set-gp-state -- scheduled future ready
+npm run worker:tick
+```
+
+Le worker passe le GP en `open` et publie ou edite son message Discord.
 
 ## Premiere milestone produit
 

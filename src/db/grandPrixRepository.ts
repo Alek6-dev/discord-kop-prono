@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
-import type { GrandPrix } from "../domain/types.js";
+import { and, asc, eq, lte } from "drizzle-orm";
+import type { GrandPrix, GrandPrixStatus } from "../domain/types.js";
 import { db } from "./client.js";
 import { grandPrix } from "./schema.js";
 
@@ -15,12 +15,56 @@ export class PgGrandPrixRepository {
       return undefined;
     }
 
-    return {
-      id: row.id,
-      name: row.name,
-      status: row.status,
-      weekendType: row.weekendType,
-      predictionsLockAt: row.predictionsLockAt
-    };
+    return mapGrandPrix(row);
   }
+
+  async getOpen(): Promise<GrandPrix | undefined> {
+    const [row] = await db
+      .select()
+      .from(grandPrix)
+      .where(eq(grandPrix.status, "open"))
+      .orderBy(asc(grandPrix.predictionsLockAt))
+      .limit(1);
+
+    return row ? mapGrandPrix(row) : undefined;
+  }
+
+  async getNextScheduledToOpen(now = new Date()): Promise<GrandPrix | undefined> {
+    const [row] = await db
+      .select()
+      .from(grandPrix)
+      .where(
+        and(
+          eq(grandPrix.status, "scheduled"),
+          lte(grandPrix.predictionsOpenAt, now)
+        )
+      )
+      .orderBy(asc(grandPrix.predictionsOpenAt), asc(grandPrix.round))
+      .limit(1);
+
+    return row ? mapGrandPrix(row) : undefined;
+  }
+
+  async updateStatus(grandPrixId: string, status: GrandPrixStatus): Promise<void> {
+    await db
+      .update(grandPrix)
+      .set({
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(grandPrix.id, grandPrixId));
+  }
+}
+
+type GrandPrixRow = typeof grandPrix.$inferSelect;
+
+function mapGrandPrix(row: GrandPrixRow): GrandPrix {
+  return {
+    id: row.id,
+    name: row.name,
+    status: row.status,
+    weekendType: row.weekendType,
+    predictionsOpenAt: row.predictionsOpenAt ?? undefined,
+    predictionsLockAt: row.predictionsLockAt
+  };
 }

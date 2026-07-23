@@ -14,6 +14,7 @@ export type GrandPrix = {
   name: string;
   status: GrandPrixStatus;
   weekendType: WeekendType;
+  predictionsOpenAt?: Date;
   predictionsLockAt: Date;
 };
 

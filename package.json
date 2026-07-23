@@ -6,6 +6,7 @@
   "scripts": {
     "dev:bot": "tsx src/bot/index.ts",
     "dev:worker": "tsx src/worker/index.ts",
+    "worker:tick": "tsx src/worker/tick.ts",
     "dev:admin": "tsx src/admin/index.ts",
     "post:test-gp": "tsx src/bot/postTestGrandPrix.ts",
     "diagnose:discord": "tsx src/bot/diagnoseDiscordAccess.ts",
