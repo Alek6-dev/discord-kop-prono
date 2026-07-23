@@ -15,7 +15,7 @@ import { env } from "../config/env.js";
 import { testDrivers } from "../domain/drivers.js";
 import type { PredictionInput } from "../domain/types.js";
 import { validatePrediction } from "../domain/predictions.js";
-import { InMemoryPredictionRepository } from "../domain/predictionRepository.js";
+import { PgPredictionRepository } from "../db/predictionRepository.js";
 
 type PredictionField =
   | "q1"
@@ -43,7 +43,7 @@ type PredictionMessagePayload = {
 };
 
 const drafts = new Map<string, PredictionDraft>();
-const predictionRepository = new InMemoryPredictionRepository();
+const predictionRepository = new PgPredictionRepository();
 
 const qualifyingFields: PredictionField[] = ["q1", "q2", "q3"];
 const raceFields: PredictionField[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"];
@@ -164,7 +164,10 @@ async function handlePredictionSubmit(interaction: ButtonInteraction) {
     return;
   }
 
-  await predictionRepository.save(prediction);
+  await predictionRepository.save({
+    prediction,
+    discordUsername: interaction.user.username
+  });
   drafts.delete(key);
 
   await interaction.update({

@@ -11,13 +11,16 @@
     "diagnose:discord": "tsx src/bot/diagnoseDiscordAccess.ts",
     "list:emojis": "tsx src/bot/listGuildEmojis.ts",
     "print:invite-url": "tsx src/bot/printInviteUrl.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "start:bot": "node dist/src/bot/index.js",
     "start:worker": "node dist/src/worker/index.js",
     "start:admin": "node dist/src/admin/index.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "discord.js": "^14.16.3",

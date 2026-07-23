@@ -50,10 +50,12 @@ npm run diagnose:discord
 npm run list:emojis
 npm run post:test-gp
 npm run print:invite-url
-npm run typecheck
-npm run build
+npm run docker:up
 npm run db:generate
 npm run db:migrate
+npm run db:seed
+npm run typecheck
+npm run build
 ```
 
 ## Variables Discord

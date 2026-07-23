@@ -1,8 +1,13 @@
 import type { PredictionInput } from "./types.js";
 
+export type SavePredictionInput = {
+  prediction: PredictionInput;
+  discordUsername: string;
+};
+
 export interface PredictionRepository {
   get(discordUserId: string, grandPrixId: string): Promise<PredictionInput | undefined>;
-  save(prediction: PredictionInput): Promise<void>;
+  save(input: SavePredictionInput): Promise<void>;
 }
 
 export class InMemoryPredictionRepository implements PredictionRepository {
@@ -12,7 +17,7 @@ export class InMemoryPredictionRepository implements PredictionRepository {
     return this.predictions.get(predictionKey(discordUserId, grandPrixId));
   }
 
-  async save(prediction: PredictionInput): Promise<void> {
+  async save({ prediction }: SavePredictionInput): Promise<void> {
     this.predictions.set(predictionKey(prediction.discordUserId, prediction.grandPrixId), prediction);
   }
 }
