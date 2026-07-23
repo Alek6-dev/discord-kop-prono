@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Local databases and caches
+*.sqlite
+*.sqlite3
+.drizzle/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
