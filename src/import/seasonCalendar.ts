@@ -1,6 +1,7 @@
 import type { WeekendType } from "../domain/types.js";
 
 const JOLPICA_ERGAST_URL = "https://api.jolpi.ca/ergast/f1";
+const PREDICTIONS_OPEN_DAYS_BEFORE_LOCK = 4;
 
 type JolpicaRace = {
   round: string;
@@ -94,7 +95,9 @@ function normalizeRace(year: number, race: JolpicaRace): ImportedGrandPrix {
     qualifyingStartsAt,
     sprintStartsAt,
     sprintQualifyingStartsAt,
-    predictionsOpenAt: new Date(predictionsLockAt.getTime() - 7 * 24 * 60 * 60 * 1000),
+    predictionsOpenAt: new Date(
+      predictionsLockAt.getTime() - PREDICTIONS_OPEN_DAYS_BEFORE_LOCK * 24 * 60 * 60 * 1000
+    ),
     predictionsLockAt,
     resultsFetchAfterAt: new Date(raceStartsAt.getTime() + 3 * 60 * 60 * 1000)
   };
