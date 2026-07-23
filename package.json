@@ -10,6 +10,7 @@
     "dev:admin": "tsx src/admin/index.ts",
     "post:gp": "tsx src/bot/postTestGrandPrix.ts",
     "diagnose:discord": "tsx src/bot/diagnoseDiscordAccess.ts",
+    "cleanup:pronostics": "tsx src/bot/cleanupPronosticsChannel.ts",
     "list:emojis": "tsx src/bot/listGuildEmojis.ts",
     "list:gp": "tsx src/db/listGrandPrix.ts",
     "print:invite-url": "tsx src/bot/printInviteUrl.ts",

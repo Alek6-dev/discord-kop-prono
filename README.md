@@ -48,6 +48,7 @@ npm run dev:bot
 npm run dev:worker
 npm run worker:tick
 npm run diagnose:discord
+npm run cleanup:pronostics
 npm run list:emojis
 npm run list:gp
 npm run import:season -- 2026

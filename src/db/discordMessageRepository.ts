@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "./client.js";
 import { discordMessages } from "./schema.js";
@@ -66,6 +66,17 @@ export class PgDiscordMessageRepository {
         kind: "grand_prix_duplicate"
       });
     }
+  }
+
+  async forgetMessage(input: { channelId: string; messageId: string }): Promise<void> {
+    await db
+      .delete(discordMessages)
+      .where(
+        and(
+          eq(discordMessages.channelId, input.channelId),
+          eq(discordMessages.messageId, input.messageId)
+        )
+      );
   }
 }
 
