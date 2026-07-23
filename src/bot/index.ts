@@ -14,6 +14,7 @@ import { env } from "../config/env.js";
 import { testDrivers } from "../domain/drivers.js";
 import type { PredictionInput } from "../domain/types.js";
 import { validatePrediction } from "../domain/predictions.js";
+import { InMemoryPredictionRepository } from "../domain/predictionRepository.js";
 
 type PredictionField =
   | "q1"
@@ -41,7 +42,7 @@ type PredictionPagePayload = {
 };
 
 const drafts = new Map<string, PredictionDraft>();
-const savedPredictions = new Map<string, PredictionInput>();
+const predictionRepository = new InMemoryPredictionRepository();
 
 const qualifyingFields: PredictionField[] = ["q1", "q2", "q3"];
 const raceFields: PredictionField[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"];
@@ -112,7 +113,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (interaction.customId.startsWith("prediction:view:")) {
     const grandPrixId = interaction.customId.split(":")[2];
-    const prediction = savedPredictions.get(predictionKey(interaction.user.id, grandPrixId));
+    const prediction = await predictionRepository.get(interaction.user.id, grandPrixId);
 
     await interaction.reply({
       content: prediction
@@ -132,21 +133,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await handlePredictionSubmit(interaction);
   }
 });
-
-export function buildGrandPrixActionRows(grandPrixId: string) {
-  return [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`prediction:create:${grandPrixId}`)
-        .setLabel("Faire mon prono")
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId(`prediction:view:${grandPrixId}`)
-        .setLabel("Voir mon prono")
-        .setStyle(ButtonStyle.Secondary)
-    )
-  ];
-}
 
 async function handlePredictionSelect(interaction: StringSelectMenuInteraction) {
   if (!interaction.customId.startsWith("prediction:select:")) {
@@ -196,7 +182,7 @@ async function handlePredictionSubmit(interaction: ButtonInteraction) {
     return;
   }
 
-  savedPredictions.set(key, prediction);
+  await predictionRepository.save(prediction);
   drafts.delete(key);
 
   await interaction.update({

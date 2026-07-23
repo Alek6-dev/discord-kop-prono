@@ -7,6 +7,7 @@
     "dev:bot": "tsx src/bot/index.ts",
     "dev:worker": "tsx src/worker/index.ts",
     "dev:admin": "tsx src/admin/index.ts",
+    "post:test-gp": "tsx src/bot/postTestGrandPrix.ts",
     "start:bot": "node dist/src/bot/index.js",
     "start:worker": "node dist/src/worker/index.js",
     "start:admin": "node dist/src/admin/index.js",

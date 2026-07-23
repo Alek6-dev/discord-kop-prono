@@ -36,17 +36,44 @@ npm install
 
 Copier `.env.example` vers `.env`, puis renseigner les variables necessaires.
 
+```bash
+copy .env.example .env
+```
+
 ## Commandes
 
 ```bash
 npm run dev:admin
 npm run dev:bot
 npm run dev:worker
+npm run post:test-gp
 npm run typecheck
 npm run build
 npm run db:generate
 npm run db:migrate
 ```
+
+## Variables Discord
+
+Les secrets restent uniquement dans `.env`, jamais dans le chat ni dans Git.
+
+```text
+DISCORD_TOKEN                  Token du bot, depuis le Developer Portal Discord.
+DISCORD_CLIENT_ID              Application ID / Client ID, depuis General Information.
+DISCORD_GUILD_ID               ID du serveur Discord, copie depuis Discord avec Developer Mode.
+DISCORD_PRONOSTICS_CHANNEL_ID  ID du salon ou poster les messages de Grand Prix.
+DISCORD_RESULTS_CHANNEL_ID     ID du salon resultats-pronostics.
+DISCORD_ADMIN_CHANNEL_ID       ID du salon admin/logs prive.
+```
+
+Pour tester le message de Grand Prix dans Discord :
+
+```bash
+npm run dev:bot
+npm run post:test-gp
+```
+
+Le bot doit tourner avec `npm run dev:bot` pour reagir aux boutons apres publication du message.
 
 ## Premiere milestone produit
 
