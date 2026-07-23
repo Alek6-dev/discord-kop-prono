@@ -122,11 +122,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return;
   }
 
-  if (interaction.customId.startsWith("prediction:review:")) {
-    await handlePredictionReview(interaction);
-    return;
-  }
-
   if (interaction.customId.startsWith("prediction:submit:")) {
     await handlePredictionSubmit(interaction);
   }
@@ -151,12 +146,6 @@ async function handlePredictionSelect(interaction: StringSelectMenuInteraction) 
   drafts.set(key, draft);
 
   await interaction.update(buildPredictionBlock(interaction.user.id, grandPrixId, block));
-}
-
-async function handlePredictionReview(interaction: ButtonInteraction) {
-  const grandPrixId = interaction.customId.split(":")[2];
-
-  await interaction.update(buildPredictionBlock(interaction.user.id, grandPrixId, "review"));
 }
 
 async function handlePredictionSubmit(interaction: ButtonInteraction) {
@@ -237,10 +226,6 @@ function buildDriverSelect(
 function buildReviewRow(grandPrixId: string) {
   return new ActionRowBuilder<PredictionComponent>().addComponents(
     new ButtonBuilder()
-      .setCustomId(`prediction:review:${grandPrixId}`)
-      .setLabel("Actualiser le recap")
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
       .setCustomId(`prediction:submit:${grandPrixId}`)
       .setLabel("Valider mon prono")
       .setStyle(ButtonStyle.Success)
@@ -260,7 +245,7 @@ function buildBlockContent(block: PredictionBlock, draft: PredictionDraft) {
     return `Top 10 du Grand Prix - positions 6 a 10\n\n${formatFields(blockFields.race_bottom5, draft)}`;
   }
 
-  return "Actions du prono";
+  return "\u200b";
 }
 
 function formatFields(fields: PredictionField[], draft: PredictionDraft) {
