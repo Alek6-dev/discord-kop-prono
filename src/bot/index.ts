@@ -11,13 +11,21 @@ import {
   type ButtonInteraction,
   type StringSelectMenuInteraction
 } from "discord.js";
+import { pathToFileURL } from "node:url";
 import { env } from "../config/env.js";
 import type { Driver, PredictionInput } from "../domain/types.js";
 import { validatePrediction } from "../domain/predictions.js";
 import { PgPredictionRepository } from "../db/predictionRepository.js";
 import { PgDriverRepository } from "../db/driverRepository.js";
 import { PgGrandPrixRepository } from "../db/grandPrixRepository.js";
+import { PgScoreRepository } from "../db/scoreRepository.js";
 import { assertPredictionsOpen } from "../domain/grandPrixRules.js";
+import {
+  calculatePredictionTrends,
+  MIN_PREDICTIONS_FOR_PUBLIC_TRENDS,
+  type PredictionTrends
+} from "../domain/predictionTrends.js";
+import { buildPrivateScoreMessages } from "./leaderboardMessage.js";
 
 type PredictionField =
   | "q1"
@@ -48,6 +56,7 @@ const drafts = new Map<string, PredictionDraft>();
 const predictionRepository = new PgPredictionRepository();
 const driverRepository = new PgDriverRepository();
 const grandPrixRepository = new PgGrandPrixRepository();
+const scoreRepository = new PgScoreRepository();
 
 const qualifyingFields: PredictionField[] = ["q1", "q2", "q3"];
 const raceFields: PredictionField[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"];
@@ -105,19 +114,43 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     await interaction.reply({
-      ...buildPredictionBlock(interaction.user.id, grandPrixId, "qualifying", context.drivers),
+      ...buildPredictionBlock(
+        interaction.user.id,
+        grandPrixId,
+        "qualifying",
+        context.drivers,
+        context.trends
+      ),
       flags: MessageFlags.Ephemeral
     });
     await interaction.followUp({
-      ...buildPredictionBlock(interaction.user.id, grandPrixId, "race_top5", context.drivers),
+      ...buildPredictionBlock(
+        interaction.user.id,
+        grandPrixId,
+        "race_top5",
+        context.drivers,
+        context.trends
+      ),
       flags: MessageFlags.Ephemeral
     });
     await interaction.followUp({
-      ...buildPredictionBlock(interaction.user.id, grandPrixId, "race_bottom5", context.drivers),
+      ...buildPredictionBlock(
+        interaction.user.id,
+        grandPrixId,
+        "race_bottom5",
+        context.drivers,
+        context.trends
+      ),
       flags: MessageFlags.Ephemeral
     });
     await interaction.followUp({
-      ...buildPredictionBlock(interaction.user.id, grandPrixId, "review", context.drivers),
+      ...buildPredictionBlock(
+        interaction.user.id,
+        grandPrixId,
+        "review",
+        context.drivers,
+        context.trends
+      ),
       flags: MessageFlags.Ephemeral
     });
     return;
@@ -139,6 +172,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (interaction.customId.startsWith("prediction:submit:")) {
     await handlePredictionSubmit(interaction);
+    return;
+  }
+
+  if (interaction.customId.startsWith("score:view:")) {
+    await handleScoreView(interaction);
   }
 });
 
@@ -156,12 +194,18 @@ async function handlePredictionSelect(interaction: StringSelectMenuInteraction) 
   ];
   const key = predictionKey(interaction.user.id, grandPrixId);
   const draft = drafts.get(key) ?? {};
-  const drivers = await driverRepository.listActive();
+  const [drivers, predictions] = await Promise.all([
+    driverRepository.listActive(),
+    predictionRepository.listByGrandPrix(grandPrixId)
+  ]);
+  const trends = calculatePredictionTrends(predictions);
 
   draft[field] = interaction.values[0];
   drafts.set(key, draft);
 
-  await interaction.update(buildPredictionBlock(interaction.user.id, grandPrixId, block, drivers));
+  await interaction.update(
+    buildPredictionBlock(interaction.user.id, grandPrixId, block, drivers, trends)
+  );
 }
 
 async function handlePredictionSubmit(interaction: ButtonInteraction) {
@@ -183,7 +227,13 @@ async function handlePredictionSubmit(interaction: ButtonInteraction) {
 
   if (!validation.ok) {
     await interaction.update({
-      ...buildPredictionBlock(interaction.user.id, grandPrixId, "review", context.drivers),
+      ...buildPredictionBlock(
+        interaction.user.id,
+        grandPrixId,
+        "review",
+        context.drivers,
+        context.trends
+      ),
       content: `Erreur: ${validation.reason}`
     });
     return;
@@ -201,15 +251,63 @@ async function handlePredictionSubmit(interaction: ButtonInteraction) {
   });
 }
 
+async function handleScoreView(interaction: ButtonInteraction) {
+  const grandPrixId = interaction.customId.split(":")[2];
+  const [grandPrix, drivers, leaderboard, score] = await Promise.all([
+    grandPrixRepository.get(grandPrixId),
+    driverRepository.listActive(),
+    scoreRepository.listGrandPrixLeaderboard(grandPrixId),
+    scoreRepository.getUserScore(grandPrixId, interaction.user.id)
+  ]);
+
+  if (!grandPrix) {
+    await interaction.reply({
+      content: "Grand Prix introuvable.",
+      flags: MessageFlags.Ephemeral
+    });
+    return;
+  }
+
+  if (!score) {
+    await interaction.reply({
+      content: "Aucun score trouve pour toi sur ce Grand Prix.",
+      flags: MessageFlags.Ephemeral
+    });
+    return;
+  }
+
+  const scoreMessages = buildPrivateScoreMessages({
+    grandPrix,
+    leaderboard,
+    score,
+    drivers
+  });
+
+  const [firstMessage, ...followUpMessages] = scoreMessages;
+
+  await interaction.reply({
+    content: firstMessage,
+    flags: MessageFlags.Ephemeral
+  });
+
+  for (const message of followUpMessages) {
+    await interaction.followUp({
+      content: message,
+      flags: MessageFlags.Ephemeral
+    });
+  }
+}
+
 function buildPredictionBlock(
   discordUserId: string,
   grandPrixId: string,
   block: PredictionBlock,
-  drivers: Driver[]
+  drivers: Driver[],
+  trends: PredictionTrends
 ): PredictionMessagePayload {
   const draft = drafts.get(predictionKey(discordUserId, grandPrixId)) ?? {};
   const rows: PredictionComponentRow[] = blockFields[block].map((field) =>
-    buildDriverSelect(grandPrixId, block, field, drivers, draft[field])
+    buildDriverSelect(grandPrixId, block, field, drivers, trends, draft[field])
   );
 
   if (block === "review") {
@@ -227,6 +325,7 @@ function buildDriverSelect(
   block: PredictionBlock,
   field: PredictionField,
   drivers: Driver[],
+  trends: PredictionTrends,
   selectedDriverId?: string
 ) {
   const select = new StringSelectMenuBuilder()
@@ -238,7 +337,7 @@ function buildDriverSelect(
       drivers.map((driver) => {
         const option = new StringSelectMenuOptionBuilder()
           .setLabel(driver.label)
-          .setDescription(`${driver.team} - #${driver.number}`)
+          .setDescription(buildDriverOptionDescription(driver, field, trends))
           .setValue(driver.id)
           .setDefault(driver.id === selectedDriverId);
 
@@ -251,6 +350,32 @@ function buildDriverSelect(
     );
 
   return new ActionRowBuilder<PredictionComponent>().addComponents(select);
+}
+
+function buildDriverOptionDescription(driver: Driver, field: PredictionField, trends: PredictionTrends) {
+  const base = `${driver.team} - #${driver.number}`;
+
+  if (field === "q1") {
+    return `${base} - ${formatTrendDescription(trends.pole, driver.id, "en pole")}`;
+  }
+
+  if (field === "r1") {
+    return `${base} - ${formatTrendDescription(trends.winner, driver.id, "vainqueur")}`;
+  }
+
+  return base;
+}
+
+function formatTrendDescription(
+  trend: PredictionTrends["pole"],
+  driverId: string,
+  label: string
+) {
+  if (trend.totalPredictions < MIN_PREDICTIONS_FOR_PUBLIC_TRENDS) {
+    return "tendance indisponible";
+  }
+
+  return `${Math.round(trend.percentagesByDriverId[driverId] ?? 0)}% ${label}`;
 }
 
 function buildReviewRow(grandPrixId: string) {
@@ -338,20 +463,29 @@ function predictionKey(discordUserId: string, grandPrixId: string) {
 }
 
 async function loadPredictionContext(grandPrixId: string) {
-  const [grandPrix, drivers] = await Promise.all([
+  const [grandPrix, drivers, predictions] = await Promise.all([
     grandPrixRepository.get(grandPrixId),
-    driverRepository.listActive()
+    driverRepository.listActive(),
+    predictionRepository.listByGrandPrix(grandPrixId)
   ]);
 
   return {
     grandPrix,
     drivers,
+    trends: calculatePredictionTrends(predictions),
     availability: assertPredictionsOpen(grandPrix)
   };
 }
 
-if (!env.DISCORD_TOKEN) {
-  throw new Error("DISCORD_TOKEN is required to start the bot.");
+export async function startBot() {
+  if (!env.DISCORD_TOKEN) {
+    throw new Error("DISCORD_TOKEN is required to start the bot.");
+  }
+
+  await client.login(env.DISCORD_TOKEN);
+  return client;
 }
 
-await client.login(env.DISCORD_TOKEN);
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  await startBot();
+}

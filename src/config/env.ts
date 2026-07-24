@@ -12,7 +12,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   ADMIN_HOST: z.string().default("127.0.0.1"),
   ADMIN_PORT: z.coerce.number().int().positive().default(3000),
-  WORKER_TICK_INTERVAL_MS: z.coerce.number().int().positive().default(60_000)
+  ADMIN_TOKEN: z.string().min(12).optional(),
+  WORKER_TICK_INTERVAL_MS: z.coerce.number().int().positive().default(300_000)
 });
 
 export const env = envSchema.parse(process.env);

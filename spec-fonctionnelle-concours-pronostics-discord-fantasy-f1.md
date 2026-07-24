@@ -337,6 +337,115 @@ Classement - GP de Hongrie
 
 Les messages de classement doivent etre idempotents : si le job tourne deux fois, le bot doit editer le message existant au lieu d'en poster un nouveau.
 
+### 4.6 Bareme de scoring V1
+
+Le scoring V1 repose sur plusieurs couches de points pour rendre chaque position utile :
+
+- points forts pour une position exacte
+- points plus faibles pour un pilote present dans la bonne zone mais mal place
+- petits bonus de proximite
+- bonus de groupe pour les pronostics remarquables
+- bonus rarete communautaire sur la pole et le vainqueur
+
+Bareme qualifs :
+
+```text
+5 pts par pilote a la position exacte
++2 pts par pilote dans le top 3 mais a la mauvaise position
++0.5 pt si le pilote est a 1 place d'ecart
++0 pt si le pilote est a 2 places d'ecart
++4 pts poleman exact
++2 pts si 2 pilotes sont presents dans le top 3
++5 pts si les 3 pilotes sont presents dans le top 3, dans le desordre
++10 pts si le top 3 qualif est exact
+```
+
+Les bonus de groupe qualifs se remplacent entre eux : top 3 exact remplace top 3 desordonne, qui remplace le bonus 2 pilotes.
+
+Bareme course :
+
+```text
++5 pts par pilote a la position exacte
++2 pts par pilote dans le top 10 mais a la mauvaise position
++1 pt si le pilote est a 1 place d'ecart
++0.75 pt si le pilote est a 2 places d'ecart
++0.5 pt si le pilote est a 3 places d'ecart
++0.25 pt si le pilote est a 4 places d'ecart
++0 pt a partir de 5 places d'ecart
++0.25 pt de consolation si le joueur met un pilote P10 et qu'il termine P11
++5 pts vainqueur exact
++6 pts podium desordonne
++10 pts podium exact
++2 pts si le joueur trouve au moins 3 positions consecutives exactes
++40 pts top 10 exact
+```
+
+Bonus nombre de bons pilotes dans le top 10 :
+
+```text
+1 bon pilote : +0.25 pt
+2 bons pilotes : +0.5 pt
+3 bons pilotes : +0.75 pt
+4 bons pilotes : +1 pt
+5 bons pilotes : +1.5 pts
+6 bons pilotes : +2 pts
+7 bons pilotes : +3 pts
+8 bons pilotes : +5 pts
+9 bons pilotes : +9 pts
+10 bons pilotes : +15 pts
+```
+
+Podium exact remplace podium desordonne. Le top 10 exact s'ajoute au reste comme jackpot rare.
+
+Bonus rarete communautaire :
+
+```text
+50% ou plus des joueurs ont fait ce choix : +0.5 pt
+25% a 49% : +1 pt
+10% a 24% : +2 pts
+5% a 9% : +3 pts
+moins de 5% : +5 pts
+```
+
+Le bonus rarete s'applique uniquement :
+
+- au poleman exact en qualifs
+- au vainqueur exact en course
+
+Les tendances P1 peuvent etre affichees dans les menus Discord pendant que les pronostics sont ouverts. Elles sont visibles seulement a partir de 5 pronostics enregistres pour le GP :
+
+```text
+Qualifs 1er : pourcentage de joueurs ayant mis ce pilote en pole
+Course 1er : pourcentage de joueurs ayant mis ce pilote vainqueur
+```
+
+Le bonus rarete utilise les tendances finales des pronostics verrouilles. Il ne s'applique qu'a partir de 5 pronostics enregistres pour le GP.
+
+Gestion des egalites :
+
+Pour l'instant, les joueurs a egalite de points restent ex-aequo. Le classement affiche le meme rang pour les scores identiques.
+
+Un systeme de departage est garde en reserve si les egalites deviennent trop frequentes apres quelques Grands Prix :
+
+```text
+1. Podium course
+   podium exact > podium desordonne > rien
+
+2. Top 3 qualif
+   top 3 exact > top 3 desordonne > 2 bons pilotes > rien
+
+3. Meilleur vainqueur pronostique
+   plus le pilote mis P1 finit haut, mieux c'est
+
+4. Positions exactes course
+   plus il y en a, mieux c'est
+
+5. Pilotes dans le top 10 course
+   plus il y en a, mieux c'est
+
+6. Ex-aequo
+```
+
 ## 5. Automatisation cible
 
 ### 5.1 Cycle de vie d'un Grand Prix

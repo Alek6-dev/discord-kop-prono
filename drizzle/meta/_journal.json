@@ -15,6 +15,13 @@
       "when": 1784826981876,
       "tag": "0001_luxuriant_silver_centurion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784883416551,
+      "tag": "0003_exotic_logan",
+      "breakpoints": true
     }
   ]
 }

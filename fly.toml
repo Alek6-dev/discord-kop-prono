@@ -9,13 +9,14 @@ primary_region = "cdg"
   ADMIN_HOST = "0.0.0.0"
   ADMIN_PORT = "3000"
 
+[deploy]
+  release_command = "npm run start:migrate"
+
 [processes]
-  web = "npm run start:admin"
-  bot = "npm run start:bot"
-  worker = "npm run start:worker"
+  app = "npm run start:app"
 
 [[services]]
-  processes = ["web"]
+  processes = ["app"]
   protocol = "tcp"
   internal_port = 3000
 

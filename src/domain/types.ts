@@ -45,4 +45,5 @@ export type NormalizedRaceResult = {
   grandPrixId: string;
   qualifyingTop3DriverIds: string[];
   raceTop10DriverIds: string[];
+  raceP11DriverId?: string;
 };

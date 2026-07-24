@@ -29,6 +29,20 @@ export class PgPredictionRepository implements PredictionRepository {
     };
   }
 
+  async listByGrandPrix(grandPrixId: string): Promise<PredictionInput[]> {
+    const rows = await db
+      .select()
+      .from(predictions)
+      .where(eq(predictions.grandPrixId, grandPrixId));
+
+    return rows.map((prediction) => ({
+      grandPrixId: prediction.grandPrixId,
+      discordUserId: prediction.discordUserId,
+      qualifyingTop3DriverIds: prediction.qualifyingTop3DriverIds,
+      raceTop10DriverIds: prediction.raceTop10DriverIds
+    }));
+  }
+
   async save(input: SavePredictionInput): Promise<void> {
     await db
       .insert(discordPlayers)

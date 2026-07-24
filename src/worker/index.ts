@@ -1,34 +1,63 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
+import { pathToFileURL } from "node:url";
 import { env } from "../config/env.js";
 import { closeDb } from "../db/client.js";
 import { PgJobLogRepository } from "../db/jobLogRepository.js";
 import { runWorkerTick } from "./tick.js";
 
-if (!env.DISCORD_TOKEN) {
-  throw new Error("DISCORD_TOKEN is required to run the worker.");
-}
-
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
 const jobLogRepository = new PgJobLogRepository();
 let isTickRunning = false;
 let interval: NodeJS.Timeout | undefined;
 
-client.once(Events.ClientReady, async () => {
-  console.log(`Worker started in ${env.NODE_ENV} mode.`);
-  console.log(`Worker tick interval: ${env.WORKER_TICK_INTERVAL_MS}ms.`);
+export async function startWorker(existingClient?: Client) {
+  if (!env.DISCORD_TOKEN) {
+    throw new Error("DISCORD_TOKEN is required to run the worker.");
+  }
 
-  await runTickSafely();
-  interval = setInterval(runTickSafely, env.WORKER_TICK_INTERVAL_MS);
-});
+  const ownsClient = !existingClient;
+  const client =
+    existingClient ??
+    new Client({
+      intents: [GatewayIntentBits.Guilds]
+    });
 
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);
+  const startTicks = async () => {
+    console.log(`Worker started in ${env.NODE_ENV} mode.`);
+    console.log(`Worker tick interval: ${env.WORKER_TICK_INTERVAL_MS}ms.`);
 
-await client.login(env.DISCORD_TOKEN);
+    await runTickSafely(client);
+    interval = setInterval(() => {
+      void runTickSafely(client);
+    }, env.WORKER_TICK_INTERVAL_MS);
+  };
 
-async function runTickSafely() {
+  if (client.isReady()) {
+    await startTicks();
+  } else {
+    client.once(Events.ClientReady, () => {
+      void startTicks();
+    });
+  }
+
+  if (ownsClient) {
+    await client.login(env.DISCORD_TOKEN);
+  }
+
+  return {
+    async stop() {
+      if (interval) {
+        clearInterval(interval);
+        interval = undefined;
+      }
+
+      if (ownsClient) {
+        client.destroy();
+      }
+    }
+  };
+}
+
+async function runTickSafely(client: Client) {
   if (isTickRunning) {
     console.log("worker_tick skipped: previous tick still running.");
     return;
@@ -50,12 +79,19 @@ async function runTickSafely() {
   }
 }
 
-async function shutdown() {
-  if (interval) {
-    clearInterval(interval);
+async function runWorkerFromCli() {
+  const worker = await startWorker();
+
+  async function shutdown() {
+    await worker.stop();
+    await closeDb();
+    process.exit(0);
   }
 
-  client.destroy();
-  await closeDb();
-  process.exit(0);
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  await runWorkerFromCli();
 }

@@ -24,11 +24,6 @@ async function lockExpiredScheduledGrandPrix(
   const expiredScheduledGrandPrix = await grandPrixRepository.listExpiredScheduled(now);
 
   if (expiredScheduledGrandPrix.length === 0) {
-    await jobLogRepository.create({
-      jobName: "lock_expired_scheduled_grand_prix",
-      status: "skipped",
-      message: "No expired scheduled Grand Prix."
-    });
     console.log("lock_expired_scheduled_grand_prix skipped: no expired scheduled GP.");
     return;
   }
@@ -54,11 +49,6 @@ async function lockExpiredOpenGrandPrix(
   const openGrandPrix = await grandPrixRepository.listOpen();
 
   if (openGrandPrix.length === 0) {
-    await jobLogRepository.create({
-      jobName: "lock_expired_grand_prix",
-      status: "skipped",
-      message: "No open Grand Prix."
-    });
     console.log("lock_expired_grand_prix skipped: no open Grand Prix.");
     return;
   }
@@ -67,12 +57,6 @@ async function lockExpiredOpenGrandPrix(
 
   for (const grandPrix of openGrandPrix) {
     if (grandPrix.predictionsLockAt > now) {
-      await jobLogRepository.create({
-        jobName: "lock_expired_grand_prix",
-        status: "skipped",
-        grandPrixId: grandPrix.id,
-        message: "Open Grand Prix deadline is still in the future."
-      });
       console.log(`lock_expired_grand_prix skipped: ${grandPrix.id} still open.`);
       continue;
     }
@@ -116,12 +100,6 @@ async function openNextScheduledGrandPrix(
   const currentOpenGrandPrix = await grandPrixRepository.getOpen();
 
   if (currentOpenGrandPrix) {
-    await jobLogRepository.create({
-      jobName: "open_scheduled_grand_prix",
-      status: "skipped",
-      grandPrixId: currentOpenGrandPrix.id,
-      message: "Another Grand Prix is already open."
-    });
     console.log(`open_scheduled_grand_prix skipped: ${currentOpenGrandPrix.id} already open.`);
     return;
   }
@@ -129,11 +107,6 @@ async function openNextScheduledGrandPrix(
   const nextGrandPrix = await grandPrixRepository.getNextScheduledToOpen(now);
 
   if (!nextGrandPrix) {
-    await jobLogRepository.create({
-      jobName: "open_scheduled_grand_prix",
-      status: "skipped",
-      message: "No scheduled Grand Prix is ready to open."
-    });
     console.log("open_scheduled_grand_prix skipped: no GP ready.");
     return;
   }

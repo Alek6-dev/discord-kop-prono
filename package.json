@@ -20,6 +20,9 @@
     "start:bot": "node dist/src/bot/index.js",
     "start:worker": "node dist/src/worker/index.js",
     "start:admin": "node dist/src/admin/index.js",
+    "start:app": "node dist/src/app/index.js",
+    "start:migrate": "node dist/src/db/migrate.js",
+    "start:cleanup-skipped-job-logs": "node dist/src/db/cleanupSkippedJobLogs.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
@@ -27,8 +30,14 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:check": "tsx src/db/check.ts",
     "dev:set-gp-state": "tsx src/db/setTestGrandPrixState.ts",
+    "dev:seed-predictions": "tsx src/db/seedBotPredictions.ts",
+    "dev:reset-scoring-test": "tsx src/db/resetScoringTest.ts",
     "dev:delete-gp": "tsx src/db/deleteGrandPrix.ts",
-    "apply:season-state": "tsx src/db/applySeasonState.ts"
+    "dev:cleanup-skipped-job-logs": "tsx src/db/cleanupSkippedJobLogs.ts",
+    "apply:season-state": "tsx src/db/applySeasonState.ts",
+    "score:gp": "tsx src/db/scoreGrandPrix.ts",
+    "publish:leaderboard": "tsx src/bot/leaderboardPublisher.ts",
+    "test:scoring": "tsx src/domain/scoring.test.ts"
   },
   "dependencies": {
     "discord.js": "^14.16.3",

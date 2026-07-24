@@ -2,6 +2,7 @@ import {
   boolean,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -95,6 +96,7 @@ export const raceResults = pgTable("race_results", {
     .references(() => grandPrix.id),
   qualifyingTop3DriverIds: jsonb("qualifying_top3_driver_ids").$type<string[]>().notNull(),
   raceTop10DriverIds: jsonb("race_top10_driver_ids").$type<string[]>().notNull(),
+  raceP11DriverId: text("race_p11_driver_id"),
   source: text("source"),
   fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
@@ -109,7 +111,7 @@ export const scores = pgTable(
     discordUserId: text("discord_user_id")
       .notNull()
       .references(() => discordPlayers.discordUserId),
-    points: integer("points").notNull().default(0),
+    points: numeric("points", { precision: 8, scale: 2, mode: "number" }).notNull().default(0),
     details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
     calculatedAt: timestamp("calculated_at", { withTimezone: true }).notNull().defaultNow()
   },

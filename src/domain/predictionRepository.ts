@@ -7,6 +7,7 @@ export type SavePredictionInput = {
 
 export interface PredictionRepository {
   get(discordUserId: string, grandPrixId: string): Promise<PredictionInput | undefined>;
+  listByGrandPrix(grandPrixId: string): Promise<PredictionInput[]>;
   save(input: SavePredictionInput): Promise<void>;
 }
 
@@ -15,6 +16,10 @@ export class InMemoryPredictionRepository implements PredictionRepository {
 
   async get(discordUserId: string, grandPrixId: string): Promise<PredictionInput | undefined> {
     return this.predictions.get(predictionKey(discordUserId, grandPrixId));
+  }
+
+  async listByGrandPrix(grandPrixId: string): Promise<PredictionInput[]> {
+    return [...this.predictions.values()].filter((prediction) => prediction.grandPrixId === grandPrixId);
   }
 
   async save({ prediction }: SavePredictionInput): Promise<void> {
