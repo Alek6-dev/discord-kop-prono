@@ -1,11 +1,12 @@
 import { pathToFileURL } from "node:url";
-import { ChannelType, Client, Events, GatewayIntentBits } from "discord.js";
+import { AttachmentBuilder, ChannelType, Client, Events, GatewayIntentBits } from "discord.js";
 import { env } from "../config/env.js";
 import { closeDb } from "../db/client.js";
 import { PgDiscordMessageRepository } from "../db/discordMessageRepository.js";
 import { PgGrandPrixRepository } from "../db/grandPrixRepository.js";
-import { PgScoreRepository } from "../db/scoreRepository.js";
+import { PgScoreRepository, type LeaderboardEntry } from "../db/scoreRepository.js";
 import type { GrandPrix } from "../domain/types.js";
+import { renderLeaderboardCard } from "../image/leaderboardCard.js";
 import { buildLeaderboardMessage } from "./leaderboardMessage.js";
 
 export class LeaderboardPublisher {
@@ -32,6 +33,7 @@ export class LeaderboardPublisher {
     }
 
     const payload = buildLeaderboardMessage(grandPrix, leaderboard);
+    const image = await buildLeaderboardImage(grandPrix, leaderboard);
     const storedMessage = await this.discordMessageRepository.getGrandPrixLeaderboardMessage(
       grandPrix.id
     );
@@ -40,11 +42,18 @@ export class LeaderboardPublisher {
       : undefined;
 
     if (existingMessage) {
-      const message = await existingMessage.edit(payload);
+      const message = await existingMessage.edit({
+        ...payload,
+        files: image ? [image] : [],
+        attachments: []
+      });
       return message.url;
     }
 
-    const message = await channel.send(payload);
+    const message = await channel.send({
+      ...payload,
+      files: image ? [image] : []
+    });
 
     await this.discordMessageRepository.saveGrandPrixLeaderboardMessage({
       grandPrixId: grandPrix.id,
@@ -53,6 +62,18 @@ export class LeaderboardPublisher {
     });
 
     return message.url;
+  }
+}
+
+async function buildLeaderboardImage(grandPrix: GrandPrix, leaderboard: LeaderboardEntry[]) {
+  try {
+    const buffer = await renderLeaderboardCard({ grandPrix, leaderboard });
+    return new AttachmentBuilder(buffer, {
+      name: `classement-${grandPrix.id}.png`
+    });
+  } catch (error) {
+    console.warn("Could not render leaderboard image, falling back to text leaderboard.", error);
+    return undefined;
   }
 }
 
