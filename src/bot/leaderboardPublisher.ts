@@ -6,7 +6,7 @@ import { PgDiscordMessageRepository } from "../db/discordMessageRepository.js";
 import { PgGrandPrixRepository } from "../db/grandPrixRepository.js";
 import { PgScoreRepository, type LeaderboardEntry } from "../db/scoreRepository.js";
 import type { GrandPrix } from "../domain/types.js";
-import { renderLeaderboardCard } from "../image/leaderboardCard.js";
+import { renderLeaderboardCard, type LeaderboardCardEntry } from "../image/leaderboardCard.js";
 import { buildLeaderboardMessage } from "./leaderboardMessage.js";
 
 export class LeaderboardPublisher {
@@ -33,7 +33,7 @@ export class LeaderboardPublisher {
     }
 
     const payload = buildLeaderboardMessage(grandPrix, leaderboard);
-    const image = await buildLeaderboardImage(grandPrix, leaderboard);
+    const image = await buildLeaderboardImage(this.client, grandPrix, leaderboard);
     const storedMessage = await this.discordMessageRepository.getGrandPrixLeaderboardMessage(
       grandPrix.id
     );
@@ -65,14 +65,46 @@ export class LeaderboardPublisher {
   }
 }
 
-async function buildLeaderboardImage(grandPrix: GrandPrix, leaderboard: LeaderboardEntry[]) {
+async function buildLeaderboardImage(client: Client, grandPrix: GrandPrix, leaderboard: LeaderboardEntry[]) {
   try {
-    const buffer = await renderLeaderboardCard({ grandPrix, leaderboard });
+    const leaderboardWithAvatars = await attachDiscordAvatars(client, leaderboard);
+    const buffer = await renderLeaderboardCard({ grandPrix, leaderboard: leaderboardWithAvatars });
     return new AttachmentBuilder(buffer, {
       name: `classement-${grandPrix.id}.png`
     });
   } catch (error) {
     console.warn("Could not render leaderboard image, falling back to text leaderboard.", error);
+    return undefined;
+  }
+}
+
+async function attachDiscordAvatars(
+  client: Client,
+  leaderboard: LeaderboardEntry[]
+): Promise<LeaderboardCardEntry[]> {
+  return Promise.all(
+    leaderboard.map(async (entry) => ({
+      ...entry,
+      avatarDataUri: await fetchDiscordAvatarDataUri(client, entry.discordUserId)
+    }))
+  );
+}
+
+async function fetchDiscordAvatarDataUri(client: Client, discordUserId: string) {
+  try {
+    const user = await client.users.fetch(discordUserId);
+    const avatarUrl = user.displayAvatarURL({ extension: "png", size: 128 });
+    const response = await fetch(avatarUrl);
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const contentType = response.headers.get("content-type") ?? "image/png";
+    const avatar = Buffer.from(await response.arrayBuffer());
+    return `data:${contentType};base64,${avatar.toString("base64")}`;
+  } catch (error) {
+    console.warn(`Could not fetch Discord avatar for ${discordUserId}.`, error);
     return undefined;
   }
 }

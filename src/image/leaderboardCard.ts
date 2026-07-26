@@ -5,9 +5,13 @@ import type { GrandPrix } from "../domain/types.js";
 const CARD_WIDTH = 1600;
 const CARD_HEIGHT = 1000;
 
+export type LeaderboardCardEntry = LeaderboardEntry & {
+  avatarDataUri?: string;
+};
+
 export async function renderLeaderboardCard(input: {
   grandPrix: GrandPrix;
-  leaderboard: LeaderboardEntry[];
+  leaderboard: LeaderboardCardEntry[];
 }) {
   const svg = buildLeaderboardSvg(input);
   return sharp(Buffer.from(svg)).png().toBuffer();
@@ -15,7 +19,7 @@ export async function renderLeaderboardCard(input: {
 
 function buildLeaderboardSvg(input: {
   grandPrix: GrandPrix;
-  leaderboard: LeaderboardEntry[];
+  leaderboard: LeaderboardCardEntry[];
 }) {
   const podium = input.leaderboard.slice(0, 3);
   const rest = input.leaderboard.slice(3, 10);
@@ -64,40 +68,67 @@ function buildLeaderboardSvg(input: {
 </svg>`;
 }
 
-function renderWinner(entry: LeaderboardEntry) {
+function renderWinner(entry: LeaderboardCardEntry) {
   return `<text x="103" y="310" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900" fill="#d71920">VAINQUEUR PRONO</text>
-  <rect x="103" y="296" width="54" height="10" fill="#d71920" transform="translate(-68 0)"/>
-  <rect x="104" y="359" width="136" height="136" fill="#f2c45b" stroke="#101216" stroke-width="6"/>
+  <rect x="35" y="296" width="54" height="10" fill="#d71920"/>
   <rect x="116" y="374" width="138" height="134" fill="#d71920"/>
-  <rect x="104" y="359" width="136" height="136" fill="#f2c45b" stroke="#101216" stroke-width="6"/>
-  <text x="172" y="449" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="900" fill="#101216">${escapeXml(initials(entry.discordUsername))}</text>
+  ${renderAvatar(entry, { x: 104, y: 359, size: 136, initialsSize: 48, borderWidth: 6, borderColor: "#101216", fallbackFill: "#f2c45b" })}
   <text x="270" y="420" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="900" fill="#101216">${escapeXml(fit(entry.discordUsername, 12))}</text>
   <text x="270" y="488" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="900" fill="#d71920">${formatPoints(entry.points)}</text>`;
 }
 
-function renderPodiumRow(entry: LeaderboardEntry, index: number) {
+function renderPodiumRow(entry: LeaderboardCardEntry, index: number) {
   const rank = index + 1;
   const y = 550 + index * 114;
   const fill = rank === 1 ? "#f2c45b" : rank === 2 ? "#cbd4df" : "#c98243";
   const textFill = rank === 3 ? "#ffffff" : "#101216";
 
   return `<rect x="103" y="${y}" width="612" height="94" fill="#ffffff" stroke="#101216" stroke-opacity="0.12"/>
-  <circle cx="153" cy="${y + 47}" r="29" fill="${fill}"/>
-  <text x="153" y="${y + 57}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900" fill="${textFill}">${rank}</text>
-  <text x="216" y="${y + 59}" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="900" fill="#101216">${escapeXml(fit(entry.discordUsername, 18))}</text>
+  <circle cx="132" cy="${y + 47}" r="29" fill="${fill}"/>
+  <text x="132" y="${y + 57}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900" fill="${textFill}">${rank}</text>
+  ${renderAvatar(entry, { x: 177, y: y + 21, size: 52, initialsSize: 18, borderWidth: 2, borderColor: "#ffffff", fallbackFill: "#101216", fallbackTextFill: "#ffffff" })}
+  <text x="246" y="${y + 59}" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="900" fill="#101216">${escapeXml(fit(entry.discordUsername, 16))}</text>
   <text x="694" y="${y + 59}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900" fill="#101216">${formatPoints(entry.points)}</text>`;
 }
 
-function renderLeaderboardRow(entry: LeaderboardEntry, rank: number, maxPoints: number) {
+function renderLeaderboardRow(entry: LeaderboardCardEntry, rank: number, maxPoints: number) {
   const y = 374 + (rank - 4) * 94;
-  const width = maxPoints > 0 ? Math.max(36, Math.round((entry.points / maxPoints) * 554)) : 0;
+  const rawWidth = maxPoints > 0 ? Math.max(36, Math.round((entry.points / maxPoints) * 538)) : 0;
+  const width = Math.min(rawWidth, 538);
 
   return `<rect x="828" y="${y}" width="670" height="80" fill="#ffffff" opacity="0.06" stroke="#ffffff" stroke-opacity="0.08"/>
   <text x="846" y="${y + 40}" dominant-baseline="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900" fill="#b7bcc3">${rank}</text>
-  <text x="926" y="${y + 39}" dominant-baseline="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900" fill="#ffffff">${escapeXml(fit(entry.discordUsername, 20))}</text>
+  ${renderAvatar(entry, { x: 880, y: y + 18, size: 44, initialsSize: 15, borderWidth: 2, borderColor: "#2a3036", fallbackFill: "#d71920", fallbackTextFill: "#ffffff" })}
+  <text x="942" y="${y + 39}" dominant-baseline="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900" fill="#ffffff">${escapeXml(fit(entry.discordUsername, 18))}</text>
   <text x="1482" y="${y + 39}" text-anchor="end" dominant-baseline="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="900" fill="#ffffff">${formatPoints(entry.points)}</text>
-  <rect x="926" y="${y + 62}" width="554" height="5" fill="#ffffff" opacity="0.14"/>
-  <rect x="926" y="${y + 62}" width="${width}" height="5" fill="#d71920"/>`;
+  <rect x="942" y="${y + 62}" width="538" height="5" fill="#ffffff" opacity="0.14"/>
+  <rect x="942" y="${y + 62}" width="${width}" height="5" fill="#d71920"/>`;
+}
+
+function renderAvatar(
+  entry: LeaderboardCardEntry,
+  input: {
+    x: number;
+    y: number;
+    size: number;
+    initialsSize: number;
+    borderWidth: number;
+    borderColor: string;
+    fallbackFill: string;
+    fallbackTextFill?: string;
+  }
+) {
+  const center = input.size / 2;
+  const radius = center - input.borderWidth;
+  const clipId = `avatar-${entry.discordUserId.replace(/[^a-zA-Z0-9_-]/g, "")}-${input.x}-${input.y}`;
+  const content = entry.avatarDataUri
+    ? `<clipPath id="${clipId}"><circle cx="${input.x + center}" cy="${input.y + center}" r="${radius}"/></clipPath>
+  <image href="${entry.avatarDataUri}" x="${input.x}" y="${input.y}" width="${input.size}" height="${input.size}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>`
+    : `<circle cx="${input.x + center}" cy="${input.y + center}" r="${radius}" fill="${input.fallbackFill}"/>
+  <text x="${input.x + center}" y="${input.y + center + input.initialsSize / 3}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${input.initialsSize}" font-weight="900" fill="${input.fallbackTextFill ?? "#101216"}">${escapeXml(initials(entry.discordUsername))}</text>`;
+
+  return `${content}
+  <circle cx="${input.x + center}" cy="${input.y + center}" r="${center - input.borderWidth / 2}" fill="none" stroke="${input.borderColor}" stroke-width="${input.borderWidth}"/>`;
 }
 
 function initials(username: string) {
@@ -118,7 +149,7 @@ function formatPoints(points: number) {
 }
 
 function fit(value: string, maxLength: number) {
-  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
 
 function escapeXml(value: string) {
