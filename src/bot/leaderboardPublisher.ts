@@ -9,6 +9,8 @@ import type { GrandPrix } from "../domain/types.js";
 import { renderLeaderboardCard, type LeaderboardCardEntry } from "../image/leaderboardCard.js";
 import { buildLeaderboardMessage } from "./leaderboardMessage.js";
 
+const LEADERBOARD_IMAGE_ENABLED = false;
+
 export class LeaderboardPublisher {
   private readonly discordMessageRepository = new PgDiscordMessageRepository();
   private readonly scoreRepository = new PgScoreRepository();
@@ -33,7 +35,9 @@ export class LeaderboardPublisher {
     }
 
     const payload = buildLeaderboardMessage(grandPrix, leaderboard);
-    const image = await buildLeaderboardImage(this.client, grandPrix, leaderboard);
+    const image = LEADERBOARD_IMAGE_ENABLED
+      ? await buildLeaderboardImage(this.client, grandPrix, leaderboard)
+      : undefined;
     const storedMessage = await this.discordMessageRepository.getGrandPrixLeaderboardMessage(
       grandPrix.id
     );
