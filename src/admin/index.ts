@@ -1,8 +1,10 @@
 import Fastify from "fastify";
 import { timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
+import type { Client } from "discord.js";
 import { asc, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { LeaderboardPublisher } from "../bot/leaderboardPublisher.js";
 import { env } from "../config/env.js";
 import { calculatePredictionTrends } from "../domain/predictionTrends.js";
 import { formatScoreDetails } from "../domain/scoreFormatting.js";
@@ -25,6 +27,7 @@ const app = Fastify({ logger: true });
 const grandPrixRepository = new PgGrandPrixRepository();
 const driverRepository = new PgDriverRepository();
 const raceResultRepository = new PgRaceResultRepository();
+let leaderboardPublisher: LeaderboardPublisher | undefined;
 
 const resultBodySchema = z.object({
   qualifyingTop3DriverIds: z.array(z.string().min(1)).length(3),
@@ -179,11 +182,17 @@ app.post("/api/grand-prix/:grandPrixId/results", async (request) => {
 app.post("/api/grand-prix/:grandPrixId/score", async (request) => {
   const { grandPrixId } = request.params as { grandPrixId: string };
   const result = await scoreGrandPrix(grandPrixId);
+  const messageUrl = leaderboardPublisher ? await leaderboardPublisher.publish(result.grandPrix) : undefined;
+
+  if (messageUrl) {
+    await grandPrixRepository.updateStatus(grandPrixId, "published");
+  }
 
   return {
     ok: true,
     scoredPredictions: result.scoredPredictions,
-    leaderboard: result.leaderboard
+    leaderboard: result.leaderboard,
+    messageUrl
   };
 });
 
@@ -693,7 +702,7 @@ function buildAdminHtml() {
                   <h3>Scoring</h3>
                   <div id="score-status" class="status-line \${escapeHtml(state.scoreStatus.kind)}">\${escapeHtml(state.scoreStatus.message)}</div>
                 </div>
-                <button class="primary" id="score-gp" \${detail.result ? "" : "disabled"}>Recalculer</button>
+                <button class="primary" id="score-gp" \${detail.result ? "" : "disabled"}>Recalculer + publier</button>
               </div>
               <div class="panel-body">
                 <div class="row"><span>Pronos</span><strong>\${detail.predictions.length}</strong></div>
@@ -774,11 +783,14 @@ function buildAdminHtml() {
       button.disabled = true;
 
       try {
-        await api("/api/grand-prix/" + encodeURIComponent(state.selectedGrandPrixId) + "/score", {
+        const result = await api("/api/grand-prix/" + encodeURIComponent(state.selectedGrandPrixId) + "/score", {
           method: "POST",
           body: JSON.stringify({})
         });
-        state.scoreStatus = { message: "Scores recalcules.", kind: "ok" };
+        state.scoreStatus = {
+          message: result.messageUrl ? "Scores recalcules et classement publie." : "Scores recalcules.",
+          kind: "ok"
+        };
         await loadDashboard();
       } catch (error) {
         setScoreStatus(error.message, "error");
@@ -966,7 +978,9 @@ function buildAdminHtml() {
 </html>`;
 }
 
-export async function startAdmin() {
+export async function startAdmin(discordClient?: Client) {
+  leaderboardPublisher = discordClient ? new LeaderboardPublisher(discordClient) : undefined;
+
   await app.listen({
     host: env.ADMIN_HOST,
     port: env.ADMIN_PORT

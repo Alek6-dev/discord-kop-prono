@@ -5,7 +5,7 @@ import { startWorker } from "../worker/index.js";
 
 const botClient = await startBot();
 const worker = await startWorker(botClient);
-const admin = await startAdmin();
+const admin = await startAdmin(botClient);
 
 console.log("App process started: admin, bot and worker are running.");
 
