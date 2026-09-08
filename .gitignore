@@ -12,6 +12,11 @@ coverage/
 .env.*
 !.env.example
 
+# Local project memory/reference docs
+AGENTS.md
+README.md
+SyncSeasonCommand.php
+
 # Logs
 *.log
 npm-debug.log*
